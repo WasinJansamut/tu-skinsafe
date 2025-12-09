@@ -5,10 +5,25 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>เข้าสู่ระบบ : {{ config('app.name') ?? 'NOT FOUND' }}</title>
-    <meta name="description" content="{{ config('app.name') ?? '' }}">
-    <meta name="keywords" content="{{ config('app.name') ?? '' }}">
-    <meta name="author" content="{{ config('app.name') ?? '' }}">
-    <meta name="DC.title" content="{{ config('app.name') ?? '' }}">
+
+    <!-- META: TU SkinSafe SEO + Social -->
+    <meta name="title" content="TU SkinSafe - Your Skin. Your Control.">
+    <meta name="description" content="TU SkinSafe ระบบต้นแบบเพื่อการวิจัยด้านการจัดเก็บและแบ่งปันภาพผิวหนังอย่างปลอดภัย ภาพของคุณ สิทธิของคุณ พัฒนาโดย นายวศิลป์ จันทร์สมุทร">
+    <meta name="keywords" content="TU SkinSafe, teledermatology, dermatology, skin imaging, PDPA, prototype system, ภาพผิวหนัง, ระบบต้นแบบ, ธรรมศาสตร์, งานวิจัย">
+    <meta name="author" content="Wasin Jansamut">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tu-skinsafe.com/">
+    <meta property="og:title" content="TU SkinSafe - Your Skin. Your Control.">
+    <meta property="og:description" content="ระบบต้นแบบเพื่อการวิจัยด้านการจัดเก็บและแบ่งปันภาพผิวหนังอย่างปลอดภัย ภาพของคุณ สิทธิของคุณ พัฒนาโดย นายวศิลป์ จันทร์สมุทร">
+    <meta property="og:image" content="https://tu-skinsafe.com/og-cover.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TU SkinSafe - Your Skin. Your Control.">
+    <meta name="twitter:description" content="Prototype for secure dermatological image storage & sharing.">
+    <meta name="twitter:image" content="https://tu-skinsafe.com/og-cover.png">
 
     <!-- Favicon -->
     <!-- Favicon generator. For real. https://realfavicongenerator.net -->
