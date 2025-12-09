@@ -17,13 +17,14 @@
     <meta property="og:url" content="https://tu-skinsafe.com/">
     <meta property="og:title" content="TU SkinSafe - Your Skin. Your Control.">
     <meta property="og:description" content="ระบบต้นแบบเพื่อการวิจัยด้านการจัดเก็บและแบ่งปันภาพผิวหนังอย่างปลอดภัย ภาพของคุณ สิทธิของคุณ พัฒนาโดย นายวศิลป์ จันทร์สมุทร">
-    <meta property="og:image" content="https://tu-skinsafe.com/og-cover.png">
+    <meta property="og:image" content="{{ asset('assets/images/og-cover.png') }}">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="TU SkinSafe - Your Skin. Your Control.">
     <meta name="twitter:description" content="Prototype for secure dermatological image storage & sharing.">
-    <meta name="twitter:image" content="https://tu-skinsafe.com/og-cover.png">
+    <meta name="twitter:image" content="{{ asset('assets/images/og-cover.png') }}">
+
 
     <!-- Favicon -->
     <!-- Favicon generator. For real. https://realfavicongenerator.net -->
