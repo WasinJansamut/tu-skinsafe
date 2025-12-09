@@ -2,6 +2,7 @@
 @section('page_title', 'หน้าหลัก')
 @section('content')
     <div class="conatiner-fluid content-inner">
+        @include('layouts.alert')
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
