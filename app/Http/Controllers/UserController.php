@@ -219,7 +219,6 @@ class UserController extends Controller
 
         try {
             $user = User::findOrFail($id);
-            $old_user = $user->replicate();
 
             $user->employee_id = strtolower($request->employee_id);
             $user->name = $request->name;
