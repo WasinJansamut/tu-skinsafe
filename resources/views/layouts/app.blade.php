@@ -6,7 +6,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>@yield('page_title') : {{ $show_company_all_web->name_th ?? 'NOT FOUND' }}</title>
+    <title>@yield('page_title') : {{ config('app.name') ?? 'NOT FOUND' }}</title>
     <meta name="description" content="{{ config('app.name') ?? '' }}">
     <meta name="keywords" content="{{ config('app.name') ?? '' }}">
     <meta name="author" content="{{ config('app.name') ?? '' }}">
