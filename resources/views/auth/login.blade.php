@@ -76,8 +76,8 @@
 
                             <div class="card card-transparent shadow-none d-flex justify-content-center mb-0 auth-card iq-auth-form">
                                 <div class="card-body">
-                                    <div class="text-center">
-                                        <img class="pe-none" src="{{ asset('assets/images/logo/logo.png') }}" height="100" loading="lazy">
+                                    <div class="text-center mb-2">
+                                        <img class="pe-none" src="{{ asset('assets/images/logo/logo_horizontal.png') }}" height="80" loading="lazy">
                                     </div>
 
                                     <h2 class="mb-2 text-center">เข้าสู่ระบบ</h2>
