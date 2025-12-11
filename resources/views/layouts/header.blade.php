@@ -57,7 +57,7 @@
                                 </div>
                                 <div>
                                     <span class="badge rounded-pill bg-secondary-subtle">
-                                        {{ Auth::user()->name ?? '' }}
+                                        {{ Auth::user()->email ?? '' }}
                                     </span>
                                 </div>
                             </span>
