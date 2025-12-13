@@ -130,7 +130,6 @@
                                                 <i class="fa-solid fa-key me-1"></i>
                                                 เข้าสู่ระบบ
                                             </button>
-                                            <a class="btn btn-link" href="#">สมัครสมาชิก</a>
                                         </div>
                                     </form>
                                 </div>
