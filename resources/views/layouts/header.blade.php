@@ -12,8 +12,8 @@
                         <img src="{{ asset('assets/images/logo/logo.png') }}" width="32" height="32" loading="lazy">
                     </div>
                 </div>
-                <h4 class="logo-title fw-bold d-block d-xl-none ms-1" style="color: #bd1d27">
-                    {{ config('app.name') ?? 'NOT FOUND' }}
+                <h4 class="logo-title fw-bold d-block d-xl-none ms-1">
+                    <span style="color:#bd1d27">TU</span><span style="color:#032775"> SkinSafe</span>
                 </h4>
             </a>
 
