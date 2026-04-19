@@ -3,11 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\UserController;
 
 Auth::routes();
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/questionnaire', [QuestionnaireController::class, 'index'])->name('questionnaire.index');
+Route::post('/questionnaire', [QuestionnaireController::class, 'store'])->name('questionnaire.store');
 
 Route::middleware(['auth'])->group(function () {
     // ข้อมูลผู้ใช้งาน

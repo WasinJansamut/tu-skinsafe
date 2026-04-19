@@ -80,6 +80,13 @@
                                         <img class="pe-none" src="{{ asset('assets/images/logo/logo_horizontal.png') }}" height="80" loading="lazy">
                                     </div>
 
+                                    <div class="d-grid gap-2 mb-3">
+                                        <a href="{{ route('questionnaire.index') }}" class="btn btn-success btn-lg py-3 fw-bold">
+                                            <i class="fa-solid fa-clipboard-list me-2"></i>
+                                            ทำแบบสอบถาม
+                                        </a>
+                                    </div>
+
                                     <h2 class="mb-2 text-center">เข้าสู่ระบบ</h2>
 
                                     <form id="form_login" action="{{ route('login') }}" method="post">
@@ -126,7 +133,7 @@
                                             </div>
                                         </div>
                                         <div class="d-flex justify-content-center mb-3">
-                                            <button type="submit" class="btn btn-primary ">
+                                            <button type="submit" class="btn btn-primary">
                                                 <i class="fa-solid fa-key me-1"></i>
                                                 เข้าสู่ระบบ
                                             </button>
