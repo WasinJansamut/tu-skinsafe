@@ -13,6 +13,12 @@ Route::get('/questionnaire', [QuestionnaireController::class, 'index'])->name('q
 Route::post('/questionnaire', [QuestionnaireController::class, 'store'])->name('questionnaire.store');
 
 Route::middleware(['auth'])->group(function () {
+    Route::prefix('questionnaire')->group(function () {
+        Route::get('/responses', [QuestionnaireController::class, 'responses'])->name('questionnaire.responses');
+        Route::get('/responses/{id}', [QuestionnaireController::class, 'showResponse'])->name('questionnaire.responses.show');
+        Route::get('/summary', [QuestionnaireController::class, 'summary'])->name('questionnaire.summary');
+    });
+
     // ข้อมูลผู้ใช้งาน
     Route::prefix('user')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('user.index');

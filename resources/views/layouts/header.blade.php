@@ -57,7 +57,7 @@
                                 </div>
                                 <div>
                                     <span class="badge rounded-pill bg-secondary-subtle">
-                                        {{ Auth::user()->email ?? '' }}
+                                        {{ Auth::user()->role === 'admin' ? 'Admin' : 'ผู้เข้าร่วมวิจัย' }}
                                     </span>
                                 </div>
                             </span>

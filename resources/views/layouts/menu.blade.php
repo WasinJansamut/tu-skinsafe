@@ -47,6 +47,38 @@
                 <li>
                     <hr class="hr-horizontal">
                 </li>
+
+                @if (auth()->user()?->role === 'admin' || !\App\Models\User::where('role', 'admin')->exists())
+                    <li class="nav-item">
+                        <a class="nav-link {{ Request::is('user') || Request::is('user/*') ? 'active' : '' }}"
+                            href="{{ route('user.index') }}">
+                            <i class="icon" data-bs-toggle="tooltip" title="User Manage" data-bs-placement="right">
+                                <i class="fa-solid fa-users"></i>
+                            </i>
+                            <span class="item-name">User Manage</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ Request::is('questionnaire/responses') || Request::is('questionnaire/responses/*') ? 'active' : '' }}"
+                            href="{{ route('questionnaire.responses') }}">
+                            <i class="icon" data-bs-toggle="tooltip" title="แบบสอบถาม" data-bs-placement="right">
+                                <i class="fa-solid fa-clipboard-list"></i>
+                            </i>
+                            <span class="item-name">Questionnaire</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ Request::is('questionnaire/summary') ? 'active' : '' }}"
+                            href="{{ route('questionnaire.summary') }}">
+                            <i class="icon" data-bs-toggle="tooltip" title="ผลรวมแบบสอบถาม" data-bs-placement="right">
+                                <i class="fa-solid fa-chart-column"></i>
+                            </i>
+                            <span class="item-name">Questionnaire Summary</span>
+                        </a>
+                    </li>
+                @endif
             </ul>
             <!-- Sidebar Menu End -->
         </div>

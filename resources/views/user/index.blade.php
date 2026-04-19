@@ -18,7 +18,7 @@
                     </div>
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div class="card-title mb-0">
-                            <h3 class="mb-0">ข้อมูลผู้ใช้งาน</h3>
+                            <h3 class="mb-0">User Manage</h3>
                         </div>
                         <div class="card-action mt-2 mt-sm-0">
                             <a href="{{ route('user.create') }}" class="btn btn-success">
@@ -34,9 +34,10 @@
                                 <thead>
                                     <tr>
                                         <th>Action</th>
-                                        <th>รหัสพนักงาน ชื่อ-นามสกุล</th>
-                                        <th>สาขา</th>
-                                        <th>แผนก</th>
+                                        <th>ชื่อ-นามสกุล</th>
+                                        <th>ชื่อผู้ใช้งาน</th>
+                                        <th>อีเมล</th>
+                                        <th>ประเภทผู้ใช้งาน</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -52,39 +53,25 @@
                                                         <i class="fa-solid fa-pen-to-square"></i>
                                                     </a>
                                                     <button class="btn btn-icon btn-danger btn_delete"
-                                                        alert-msg='ผู้ใช้งาน [{{ $user->employee_id ?? '' }}] {{ $user->name ?? '' }}'
+                                                        alert-msg='ผู้ใช้งาน {{ $user->name ?? '' }}'
                                                         data-bs-toggle="tooltip" data-bs-placement="top" title="ลบ">
                                                         <i class="fa-solid fa-trash-can"></i>
                                                     </button>
                                                 </form>
                                             </td>
                                             <td class="text-start">
-                                                <div class="d-flex align-items-center">
-                                                    @if (!empty($user->profile_image))
-                                                        <a id="lightbox[{{ $user->id }}]" href="{{ Helper::checkImageExists($user->profile_image) }}"
-                                                            data-lightbox="user_image_{{ $user->id }}"
-                                                            data-title="[{{ $user->employee_id ?? '' }}] {{ $user->name ?? '' }}">
-                                                            <img src="{{ Helper::checkImageExists($user->profile_image) }}"
-                                                                class="rounded img-fluid avatar-65 me-2" style="max-width: 65px; max-height: 65px;" loading="lazy" />
-                                                        </a>
-                                                    @endif
-                                                    <div class="media-support-info">
-                                                        <p class="mb-0">
-                                                            <i class="fa-regular fa-address-book"></i>
-                                                            {{ $user->employee_id ?? '' }}
-                                                        </p>
-                                                        <h5 class="iq-sub-label">{{ $user->name ?? '' }}</h5>
-                                                    </div>
-                                                </div>
+                                                <div class="fw-semibold">{{ $user->name ?? '' }}</div>
                                             </td>
                                             <td>
-                                                <i class="fa-solid fa-building me-1"></i>
-                                                [{{ $user->_branch->code ?? '' }}]
-                                                {{ $user->_branch->name ?? '' }}
+                                                {{ $user->username ?? '' }}
                                             </td>
                                             <td>
-                                                {{ $user->_department->name_th ?? '' }}<br>
-                                                {{ $user->_level->name ?? '' }}
+                                                {{ $user->email ?? '' }}
+                                            </td>
+                                            <td>
+                                                <span class="badge {{ $user->role === 'admin' ? 'bg-danger' : 'bg-success' }}">
+                                                    {{ $user->role === 'admin' ? 'Admin' : 'ผู้เข้าร่วมวิจัย' }}
+                                                </span>
                                             </td>
                                         </tr>
                                     @endforeach

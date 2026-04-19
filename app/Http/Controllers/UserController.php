@@ -2,421 +2,177 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Branch;
-use App\Models\Department;
-use App\Models\Level;
-use App\Models\UserBranchRelate;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\File;
 
 class UserController extends Controller
 {
-    // protected $profile_path;
-
-    // public function __construct()
-    // {
-    //     $this->profile_path = 'assets/images/user/';
-    // }
-
-    private function profile_path() // Path ที่อยู่ของรูปภาพโปรไฟล์
+    private function ensureAdmin()
     {
-        return 'assets/images/user/';
-    }
+        $hasAdmin = User::where('role', 'admin')->exists();
 
+        if ($hasAdmin && Auth::user()?->role !== 'admin') {
+            abort(403, 'เฉพาะผู้ดูแลระบบเท่านั้น');
+        }
+    }
 
     public function index(Request $request)
     {
-        $users = User::orderby('created_at', 'DESC')->with('_branch', '_department', '_level')->get();
+        $this->ensureAdmin();
+
+        $users = User::orderBy('created_at', 'DESC')->get();
 
         return view('user.index', compact('users'));
     }
 
     public function create(Request $request)
     {
-        try {
-            $user = new User;
-            $departments = Department::orderBy('name_th', 'DESC')->get();
-            $branches = Branch::orderBy('name', 'ASC')->get();
-            $branch_relate_array = [];
-            $levels = Level::orderBy('name', 'ASC')->get();
+        $this->ensureAdmin();
 
-            return view('user.create', compact('user', 'departments', 'branches', 'branch_relate_array', 'levels'));
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('user.index')->with('danger', $error);
-        }
+        $user = new User();
+
+        return view('user.create', compact('user'));
     }
 
     public function store(Request $request)
     {
-        $request->validate(
+        $this->ensureAdmin();
+
+        $validated = $request->validate(
             [
-                'employee_id' => [
-                    'required',
-                    'string',
-                    'max:30',
-                    Rule::unique('users')->whereNull('deleted_at'),
-                ],
-                'name' => [
-                    'required',
-                    'string',
-                    'max:255',
-                    Rule::unique('users')->whereNull('deleted_at'),
-                ],
-                'password' => 'required|min:5|max:255|confirmed',
-                'password_confirmation' => 'required|min:5|max:255',
-                'department_id' => 'required',
-                'level_id' => 'required',
-                'profile_image' => 'nullable|mimes:jpg,jpeg,png,svg',
-                'phone_no' => 'nullable|string|max:20',
+                'name' => ['required', 'string', 'max:255'],
+                'username' => ['required', 'string', 'max:30', 'alpha_dash', Rule::unique('users', 'username')],
+                'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+                'role' => ['required', Rule::in(['admin', 'research_participant'])],
+                'password' => ['required', 'string', 'min:5', 'max:255', 'confirmed'],
+                'password_confirmation' => ['required', 'string', 'min:5', 'max:255'],
             ],
             [
-                'employee_id.required' => 'กรุณากรอกรหัสพนักงาน',
-                'employee_id.string' => 'รูปแบบรหัสพนักงานต้องเป็นข้อความเท่านั้น',
-                'employee_id.max' => 'รหัสพนักงานต้องไม่เกิน 30 ตัวอักษร',
-                'employee_id.unique' => 'มีรหัสพนักงานนี้ในระบบแล้ว',
                 'name.required' => 'กรุณากรอกชื่อ-นามสกุล',
-                'name.string' => 'รูปแบบชื่อ-นามสกุลต้องเป็นข้อความเท่านั้น',
-                'name.max' => 'ชื่อ-นามสกุลต้องไม่เกิน 255 ตัวอักษร',
-                'name.unique' => 'มีชื่อ-นามสกุลนี้ในระบบแล้ว',
+                'username.required' => 'กรุณากรอกชื่อผู้ใช้งาน',
+                'username.max' => 'ชื่อผู้ใช้งานต้องไม่เกิน 30 ตัวอักษร',
+                'username.alpha_dash' => 'ชื่อผู้ใช้งานใช้ได้เฉพาะตัวอักษรอังกฤษ ตัวเลข ขีดกลาง และขีดล่าง',
+                'username.unique' => 'มีชื่อผู้ใช้งานนี้ในระบบแล้ว',
                 'email.required' => 'กรุณากรอกอีเมล',
                 'email.email' => 'รูปแบบอีเมลไม่ถูกต้อง',
-                'email.max' => 'อีเมลต้องไม่เกิน 255 ตัวอักษร',
                 'email.unique' => 'มีอีเมลนี้ในระบบแล้ว',
+                'role.required' => 'กรุณาเลือกประเภทผู้ใช้งาน',
                 'password.required' => 'กรุณากรอกรหัสผ่าน',
-                'password.min' => 'รหัสผ่านต้องมากกว่า 5 ตัวอักษร',
-                'password.max' => 'รหัสผ่านต้องไม่เกิน 255 ตัวอักษร',
+                'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 5 ตัวอักษร',
                 'password.confirmed' => 'รหัสผ่านไม่ตรงกัน',
                 'password_confirmation.required' => 'กรุณากรอกยืนยันรหัสผ่าน',
-                'password_confirmation.min' => 'ยืนยันรหัสผ่านต้องมากกว่า 5 ตัวอักษร',
-                'password_confirmation.max' => 'ยืนยันรหัสผ่านต้องไม่เกิน 255 ตัวอักษร',
-                'department_id.required' => 'กรุณาเลือกแผนก',
-                'level_id.required' => 'กรุณาเลือกระดับ',
-                'profile_image.mimes' => 'รูปโปรไฟล์รองรับ JPG, JPEG, PNG, SVG เท่านั้น',
-                'phone_no.string' => 'เบอร์โทรต้องเป็นข้อความเท่านั้น',
-                'phone_no.max' => 'เบอร์โทรต้องไม่เกิน 20 ตัวอักษร',
             ]
         );
 
-        try {
-            $user = new User;
-            $user->employee_id = strtolower($request->employee_id);
-            $user->name = $request->name;
-            $user->email = $request->email;
-            $user->phone_no = $request->phone_no;
-            $user->password = bcrypt($request->password);
-            $user->department_id = $request->department_id;
-            $user->level_id = $request->level_id;
-            $user->branch_id = $request->branch_id_main;
-            if ($request->hasFile('profile_image')) {
-                $profile_image = $request->file('profile_image');
-                $profile_gen = "profile_" . date('YmdHis');
-                $profile_ext = strtolower($profile_image->getClientOriginalExtension());
-                $profile_name = $this->profile_path() . $profile_gen . "." . $profile_ext;
-                $profile_image->move("{$this->profile_path()}", $profile_name);
-                $user->profile_image = $profile_name;
-            }
-            $roles = is_array($request->input('department_role'))
-                ? $request->input('department_role')
-                : [optional(Department::find($request->department_id))->code];
-            $roles = array_filter($roles); // กรองค่า null ออกกรณีไม่มี department
-            $user->department_role = $roles; // ถ้า cast เป็น array แล้วใน model จะ auto json
-            $user->affiliation = $request->affiliation;
-            $user->user_id = Auth::user()->id;
-            $user->save();
+        User::create([
+            'name' => $validated['name'],
+            'username' => strtolower($validated['username']),
+            'email' => strtolower($validated['email']),
+            'role' => $validated['role'],
+            'password' => Hash::make($validated['password']),
+        ]);
 
-            // เรียกฟังก์ชัน save_branch เพื่อบันทึกสาขาที่สามารถเข้าถึงได้
-            $this->save_branch($request->merge(['user_id' => $user->id]));
-
-            return redirect()->route('user.index')->with('success', 'เพิ่มข้อมูลผู้ใช้งาน ' . $user->name . ' เรียบร้อยแล้ว');
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('user.index')->with('danger', $error);
-        }
+        return redirect()->route('user.index')->with('success', 'เพิ่มข้อมูลผู้ใช้งานเรียบร้อยแล้ว');
     }
 
     public function edit(Request $request, $id)
     {
-        try {
-            $user = User::findOrFail($id);
-            $departments = Department::orderBy('name_th', 'DESC')->get();
-            $branches = Branch::orderBy('name', 'ASC')->get();
-            $users_branch_relate = UserBranchRelate::select('branch_id')->where('user_id', $id)->get();
-            $branch_relate_array = [];
-            if (!empty($users_branch_relate)) {
-                foreach ($users_branch_relate as $user_branch_relate) {
-                    $branch_relate_array[] = $user_branch_relate->branch_id;
-                }
-            }
-            $levels = Level::orderBy('name', 'ASC')->get();
+        $this->ensureAdmin();
 
-            return view('user.edit', compact('user', 'departments', 'branches', 'branch_relate_array', 'levels'));
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('user.index')->with('danger', $error);
-        }
+        $user = User::findOrFail($id);
+
+        return view('user.edit', compact('user'));
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate(
+        $this->ensureAdmin();
+
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate(
             [
-                'employee_id' => [
-                    'required',
-                    'string',
-                    'max:30',
-                    Rule::unique('users')->ignore($id)->whereNull('deleted_at'),
-                ],
-                'name' => [
-                    'required',
-                    'string',
-                    'max:255',
-                    Rule::unique('users')->ignore($id)->whereNull('deleted_at'),
-                ],
-                'password' => 'nullable|min:5|max:255|confirmed',
-                'password_confirmation' => 'nullable|min:5|max:255',
-                'department_id' => 'required',
-                'level_id' => 'required',
-                'profile_image' => 'nullable|mimes:jpg,jpeg,png,svg',
-                'phone_no' => 'nullable|string|max:20',
+                'name' => ['required', 'string', 'max:255'],
+                'username' => ['required', 'string', 'max:30', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)],
+                'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+                'role' => ['required', Rule::in(['admin', 'research_participant'])],
+                'password' => ['nullable', 'string', 'min:5', 'max:255', 'confirmed'],
+                'password_confirmation' => ['nullable', 'string', 'min:5', 'max:255'],
             ],
             [
-                'employee_id.required' => 'กรุณากรอกรหัสพนักงาน',
-                'employee_id.string' => 'รูปแบบรหัสพนักงานต้องเป็นข้อความเท่านั้น',
-                'employee_id.max' => 'รหัสพนักงานต้องไม่เกิน 30 ตัวอักษร',
-                'employee_id.unique' => 'มีรหัสพนักงานนี้ในระบบแล้ว',
                 'name.required' => 'กรุณากรอกชื่อ-นามสกุล',
-                'name.string' => 'รูปแบบชื่อ-นามสกุลต้องเป็นข้อความเท่านั้น',
-                'name.max' => 'ชื่อ-นามสกุลต้องไม่เกิน 255 ตัวอักษร',
-                'name.unique' => 'มีชื่อ-นามสกุลนี้ในระบบแล้ว',
+                'username.required' => 'กรุณากรอกชื่อผู้ใช้งาน',
+                'username.max' => 'ชื่อผู้ใช้งานต้องไม่เกิน 30 ตัวอักษร',
+                'username.alpha_dash' => 'ชื่อผู้ใช้งานใช้ได้เฉพาะตัวอักษรอังกฤษ ตัวเลข ขีดกลาง และขีดล่าง',
+                'username.unique' => 'มีชื่อผู้ใช้งานนี้ในระบบแล้ว',
                 'email.required' => 'กรุณากรอกอีเมล',
                 'email.email' => 'รูปแบบอีเมลไม่ถูกต้อง',
-                'email.max' => 'อีเมลต้องไม่เกิน 255 ตัวอักษร',
                 'email.unique' => 'มีอีเมลนี้ในระบบแล้ว',
-                'password.min' => 'รหัสผ่านต้องมากกว่า 5 ตัวอักษร',
-                'password.max' => 'รหัสผ่านต้องไม่เกิน 255 ตัวอักษร',
+                'role.required' => 'กรุณาเลือกประเภทผู้ใช้งาน',
+                'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 5 ตัวอักษร',
                 'password.confirmed' => 'รหัสผ่านไม่ตรงกัน',
-                'password_confirmation.min' => 'ยืนยันรหัสผ่านต้องมากกว่า 5 ตัวอักษร',
-                'password_confirmation.max' => 'ยืนยันรหัสผ่านต้องไม่เกิน 255 ตัวอักษร',
-                'department_id.required' => 'กรุณาเลือกแผนก',
-                'level_id.required' => 'กรุณาเลือกระดับ',
-                'profile_image.mimes' => 'รูปโปรไฟล์รองรับ JPG, JPEG, PNG, SVG เท่านั้น',
-                'phone_no.string' => 'เบอร์โทรต้องเป็นข้อความเท่านั้น',
-                'phone_no.max' => 'เบอร์โทรต้องไม่เกิน 20 ตัวอักษร',
             ]
         );
 
-        try {
-            $user = User::findOrFail($id);
+        $user->name = $validated['name'];
+        $user->username = strtolower($validated['username']);
+        $user->email = strtolower($validated['email']);
+        $user->role = $validated['role'];
 
-            $user->employee_id = strtolower($request->employee_id);
-            $user->name = $request->name;
-            $user->email = $request->email;
-            $user->phone_no = $request->phone_no;
-            if ($request->password) {
-                $user->password = bcrypt($request->password);
-            }
-            $user->department_id = $request->department_id;
-            $user->level_id = $request->level_id;
-            $user->branch_id = $request->branch_id_main;
-            if ($request->hasFile('profile_image')) {
-                $profile_image = $request->file('profile_image');
-                $profile_gen = "profile_" . date('YmdHis');
-                $profile_ext = strtolower($profile_image->getClientOriginalExtension());
-                $profile_name = $this->profile_path() . $profile_gen . "." . $profile_ext;
-                $profile_image->move("{$this->profile_path()}", $profile_name);
-                @unlink($user->profile_image);
-                $user->profile_image = $profile_name;
-            }
-            $roles = is_array($request->input('department_role')) ? $request->input('department_role') : [optional(Department::find($request->department_id))->code];
-            $roles = array_filter($roles); // กรองค่า null ออกกรณีไม่มี department
-            $user->department_role = $roles; // ถ้า cast เป็น array แล้วใน model จะ auto json
-            $user->affiliation = $request->affiliation;
-            $user->user_id_edit = Auth::user()->id;
-            $user->update();
-
-            // เรียกฟังก์ชัน save_branch เพื่อบันทึกสาขาที่สามารถเข้าถึงได้
-            $this->save_branch($request->merge(['user_id' => $user->id]));
-
-            return redirect()->route('user.index')->with('success', 'แก้ไขข้อมูลผู้ใช้งาน ' . $user->name . ' เรียบร้อยแล้ว');
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('user.index')->with('danger', $error);
+        if (! empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
         }
+
+        $user->save();
+
+        return redirect()->route('user.index')->with('success', 'แก้ไขข้อมูลผู้ใช้งานเรียบร้อยแล้ว');
     }
 
     public function soft_delete(Request $request, $id)
     {
-        try {
-            $user = User::findOrFail($id);
-            $user->delete();
+        $this->ensureAdmin();
 
-            return redirect()->route('user.index')->with('success', 'ลบข้อมูลผู้ใช้งาน ' . $user->name . ' เรียบร้อยแล้ว');
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('user.index')->with('danger', $error);
+        $user = User::findOrFail($id);
+
+        if ((int) Auth::id() === (int) $user->id) {
+            return redirect()->route('user.index')->with('danger', 'ไม่สามารถลบบัญชีผู้ใช้งานของตัวเองได้');
         }
+
+        $user->delete();
+
+        return redirect()->route('user.index')->with('success', 'ลบข้อมูลผู้ใช้งานเรียบร้อยแล้ว');
     }
 
     public function my_profile_edit(Request $request)
     {
-        try {
-            $id = Auth::user()->id;
-            $user = User::with('_branch', '_department', '_level')->findOrFail($id);
+        $user = Auth::user();
 
-            // [Start] แสดง Session
-            $sessions = [];
-            $session_lifetime = config('session.lifetime') * 60; // นาที → วินาที
-            $now = time();
-            foreach (File::files(storage_path('framework/sessions')) as $file) {
-                $contents = File::get($file->getPathname());
-
-                if (strpos($contents, 'user_id";i:' . $id . ';') !== false) {
-                    $data = @unserialize($contents);
-
-                    // ตรวจ last_activity_at (timestamp)
-                    $last_activity_at = $data['last_activity_at'] ?? null;
-                    if ($last_activity_at) {
-                        if (!is_numeric($last_activity_at)) { // ถ้าเป็น datetime string → แปลงเป็น timestamp
-                            $last_activity_at = strtotime($last_activity_at);
-                        }
-                        if ((now()->timestamp - $last_activity_at) > $session_lifetime) { // ถ้า session หมดอายุ → ข้าม
-                            continue;
-                        }
-                    }
-
-                    $sessions[] = (object)[
-                        'session_file'     => $file->getFilename(),
-                        'session_id'       => $data['session_id'] ?? null,
-                        'user_id'          => $data['user_id'] ?? null,
-                        'ip_address'       => $data['ip_address'] ?? null,
-                        'device'           => $data['device'] ?? null,
-                        'device_type'      => $data['device_type'] ?? null,
-                        'device_category'  => $data['device_category'] ?? null,
-                        'browser'          => $data['browser'] ?? null,
-                        'user_agent'       => $data['user_agent'] ?? null,
-                        'country'          => $data['country'] ?? null,
-                        'city'             => $data['city'] ?? null,
-                        'login_at'         => $data['login_at'] ?? null,
-                        'last_activity_at' => $data['last_activity_at'] ?? null,
-                    ];
-                }
-            }
-            $currentSessionId = session()->getId(); // แยก session ปัจจุบัน
-            $current = null;
-            $others = [];
-            foreach ($sessions as $session) {
-                if ($session->session_file === $currentSessionId) {
-                    $current = $session;
-                } else {
-                    $others[] = $session;
-                }
-            }
-            usort($others, function ($a, $b) { // เรียง others ตาม login_at DESC (ใหม่ → เก่า)
-                return strtotime($b->login_at) <=> strtotime($a->login_at);
-            });
-            $sessions = $current ? array_merge([$current], $others) : $others; // รวม session ปัจจุบันไว้หน้าแรก
-            // [End] แสดง Session
-
-            return view('user.my_profile', compact('user', 'sessions'));
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('home')->with('danger', $error);
-        }
+        return view('user.my_profile', compact('user'));
     }
 
     public function my_profile_update(Request $request)
     {
-        $request->validate(
+        $user = User::findOrFail(Auth::id());
+
+        $validated = $request->validate(
             [
-                'password' => 'nullable|min:5|max:255|confirmed',
-                'password_confirmation' => 'nullable|min:5|max:255',
-                'profile_image' => 'nullable|mimes:jpg,jpeg,png,svg',
-                'phone_no' => 'nullable|string|max:20',
+                'password' => ['nullable', 'string', 'min:5', 'max:255', 'confirmed'],
+                'password_confirmation' => ['nullable', 'string', 'min:5', 'max:255'],
             ],
             [
-                'password.min' => 'รหัสผ่านต้องมากกว่า 5 ตัวอักษร',
-                'password.max' => 'รหัสผ่านต้องไม่เกิน 255 ตัวอักษร',
+                'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 5 ตัวอักษร',
                 'password.confirmed' => 'รหัสผ่านไม่ตรงกัน',
-                'password_confirmation.min' => 'ยืนยันรหัสผ่านต้องมากกว่า 5 ตัวอักษร',
-                'password_confirmation.max' => 'ยืนยันรหัสผ่านต้องไม่เกิน 255 ตัวอักษร',
-                'profile_image.mimes' => 'รูปโปรไฟล์รองรับ JPG, JPEG, PNG, SVG เท่านั้น',
-                'phone_no.string' => 'เบอร์โทรต้องเป็นข้อความเท่านั้น',
-                'phone_no.max' => 'เบอร์โทรต้องไม่เกิน 20 ตัวอักษร',
             ]
         );
 
-        try {
-            $id = Auth::user()->id;
-            $user = User::findOrFail($id);
-            $old_user = $user->replicate();
-
-            if ($request->password) {
-                $user->password = bcrypt($request->password);
-            }
-            if ($request->hasFile('profile_image')) {
-                $profile_image = $request->file('profile_image');
-                $profile_gen = "profile_" . date('YmdHis');
-                $profile_ext = strtolower($profile_image->getClientOriginalExtension());
-                $profile_name = $this->profile_path() . $profile_gen . "." . $profile_ext;
-                $profile_image->move("{$this->profile_path()}", $profile_name);
-                @unlink($user->profile_image);
-                $user->profile_image = $profile_name;
-            }
-            $user->phone_no = $request->phone_no;
-            $user->update();
-
-            return redirect()->route('user.my_profile_edit')->with('success', 'แก้ไขโปรไฟล์เรียบร้อยแล้ว');
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('user.my_profile_edit')->with('danger', $error);
+        if (! empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+            $user->save();
         }
-    }
 
-    public function restore(Request $request, $id)
-    {
-        try {
-            $user = User::withTrashed()->findOrFail($id);
-            $user->restore();
-
-            return redirect()->route('user.index')->with('success', 'กู้คืนข้อมูลผู้ใช้งาน ' . $user->name . ' เรียบร้อยแล้ว');
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('user.index')->with('danger', $error);
-        }
-    }
-
-    public function destroy(Request $request, $id)
-    {
-        try {
-            $user = User::onlyTrashed()->findOrFail($id);
-            @unlink($user->profile_image);
-            $user->forceDelete();
-
-            return redirect()->route('user.index')->with('success', 'ลบข้อมูลผู้ใช้งาน ' . $user->name . ' ถาวรเรียบร้อยแล้ว');
-        } catch (\Throwable $e) {
-            $error = $e->getMessage() . "<br>";
-            $error .= "ไฟล์: " . basename($e->getFile()) . " บรรทัดที่ " . $e->getLine();
-            return redirect()->route('user.index')->with('danger', $error);
-        }
-    }
-
-    public function logout(Request $request)
-    {
-        Session::flush();
-        Auth::logout();
-        return redirect()->route('login');
+        return redirect()->route('user.my_profile_edit')->with('success', 'แก้ไขโปรไฟล์เรียบร้อยแล้ว');
     }
 }

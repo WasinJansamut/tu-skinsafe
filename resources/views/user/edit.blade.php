@@ -26,12 +26,6 @@
                         <form action="{{ route('user.update', $user->id) }}" method="post" enctype="multipart/form-data">
                             @method('POST')
                             @csrf
-                            @if (isset($user->profile_image))
-                                <div class="col-12 mb-4 text-center">
-                                    <img src="{{ Helper::checkImageExists($user->profile_image) }}"
-                                        class="rounded img-fluid object-cover" style="max-width: 200px;" />
-                                </div>
-                            @endif
                             @include('user.form')
                             <div class="d-flex justify-content-between">
                                 <a href="{{ route('user.index') }}" class="btn btn-dark">

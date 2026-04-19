@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class QuestionnaireController extends Controller
 {
-    public function index()
+    private function sections(): array
     {
-        $sections = [
+        return [
             [
                 'title' => 'หมวดที่ 1 ความต้องการด้านการบันทึกภาพโรคผิวหนัง',
                 'subtitle' => 'Image Capture Requirements',
@@ -91,6 +93,20 @@ class QuestionnaireController extends Controller
                 ],
             ],
         ];
+    }
+
+    private function ensureAdmin(): void
+    {
+        $hasAdmin = User::where('role', 'admin')->exists();
+
+        if ($hasAdmin && Auth::user()?->role !== 'admin') {
+            abort(403, 'เฉพาะผู้ดูแลระบบเท่านั้น');
+        }
+    }
+
+    public function index()
+    {
+        $sections = $this->sections();
 
         return view('questionnaire.index', compact('sections'));
     }
@@ -141,5 +157,77 @@ class QuestionnaireController extends Controller
         return redirect()
             ->route('questionnaire.index')
             ->with('success', 'บันทึกแบบสอบถามเรียบร้อยแล้ว ขอบคุณสำหรับคำตอบของท่าน');
+    }
+
+    public function responses()
+    {
+        $this->ensureAdmin();
+
+        $responses = DB::table('requirement_confirmation_questionnaires')
+            ->select('*')
+            ->selectRaw('ROUND((q1 + q2 + q3 + q4 + q5 + q6 + q7 + q8 + q9 + q10 + q11 + q12 + q13 + q14 + q15 + q16 + q17 + q18 + q19 + q20) / 20, 2) as average_score')
+            ->orderByDesc('id')
+            ->paginate(20);
+
+        return view('questionnaire.responses.index', compact('responses'));
+    }
+
+    public function showResponse($id)
+    {
+        $this->ensureAdmin();
+
+        $response = DB::table('requirement_confirmation_questionnaires')->where('id', $id)->first();
+
+        abort_unless($response, 404);
+
+        $sections = $this->sections();
+
+        return view('questionnaire.responses.show', compact('response', 'sections'));
+    }
+
+    public function summary()
+    {
+        $this->ensureAdmin();
+
+        $sections = $this->sections();
+        $responsesCount = DB::table('requirement_confirmation_questionnaires')->count();
+        $summarySections = [];
+
+        foreach ($sections as $section) {
+            $questions = [];
+
+            foreach ($section['questions'] as $questionNumber => $questionText) {
+                $column = 'q' . $questionNumber;
+                $row = DB::table('requirement_confirmation_questionnaires')
+                    ->selectRaw("
+                        ROUND(AVG({$column}), 2) as average_score,
+                        SUM(CASE WHEN {$column} = 5 THEN 1 ELSE 0 END) as score_5,
+                        SUM(CASE WHEN {$column} = 4 THEN 1 ELSE 0 END) as score_4,
+                        SUM(CASE WHEN {$column} = 3 THEN 1 ELSE 0 END) as score_3,
+                        SUM(CASE WHEN {$column} = 2 THEN 1 ELSE 0 END) as score_2,
+                        SUM(CASE WHEN {$column} = 1 THEN 1 ELSE 0 END) as score_1
+                    ")
+                    ->first();
+
+                $questions[] = [
+                    'number' => $questionNumber,
+                    'text' => $questionText,
+                    'average_score' => $row->average_score ?? null,
+                    'score_5' => (int) ($row->score_5 ?? 0),
+                    'score_4' => (int) ($row->score_4 ?? 0),
+                    'score_3' => (int) ($row->score_3 ?? 0),
+                    'score_2' => (int) ($row->score_2 ?? 0),
+                    'score_1' => (int) ($row->score_1 ?? 0),
+                ];
+            }
+
+            $summarySections[] = [
+                'title' => $section['title'],
+                'subtitle' => $section['subtitle'],
+                'questions' => $questions,
+            ];
+        }
+
+        return view('questionnaire.responses.summary', compact('summarySections', 'responsesCount'));
     }
 }

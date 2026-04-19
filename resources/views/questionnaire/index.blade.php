@@ -6,12 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>แบบสอบถามยืนยันความต้องการของผู้ใช้ : {{ config('app.name') ?? 'NOT FOUND' }}</title>
 
+    <meta property="og:title" content="แบบสอบถามยืนยันความต้องการของผู้ใช้ - TU SkinSafe">
+    <meta property="og:description" content="แบบสอบถามยืนยันความต้องการของผู้ใช้สำหรับระบบต้นแบบจัดเก็บและแลกเปลี่ยนภาพถ่ายโรคผิวหนัง TU SkinSafe">
+    <meta property="og:image" content="{{ asset('assets/images/og-cover.png') }}">
+    <meta property="og:url" content="https://tu-skinsafe.com/questionnaire">
+
     <link rel="stylesheet" href="{{ asset('assets/css/core/libs.min.css') }}">
     <link rel="stylesheet" href="{{ Helper::versionedAsset('assets/css/hope-ui.min.css') }}">
     <link rel="stylesheet" href="{{ Helper::versionedAsset('assets/css/pro.min.css') }}">
     <link rel="stylesheet" href="{{ Helper::versionedAsset('assets/css/custom.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/fontawesome-free-6.4.0-web/css/all.min.css') }}">
     <link href="{{ asset('assets/sweetalert2/css/sweetalert2.min.css') }}" rel="stylesheet" />
+
+    <!-- Favicon -->
+    <!-- Favicon generator. For real. https://realfavicongenerator.net -->
+    <link rel="icon" type="image/png" href="{{ asset('assets/images/favicon/favicon-96x96.png') }}" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/images/favicon/favicon.svg') }}" />
+    <link rel="shortcut icon" href="{{ asset('assets/images/favicon/favicon.ico') }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/images/favicon/apple-touch-icon.png') }}" />
+    <meta name="apple-mobile-web-app-title" content="{{ config('app.name') ?? 'ไม่พบ' }}" />
+    <link rel="manifest" href="{{ asset('assets/images/favicon/site.webmanifest') }}" />
+    <meta name="msapplication-TileColor" content="#00152c">
+    <meta name="theme-color" content="#ffffff">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="{{ config('app.name') ?? 'ไม่พบ' }}">
+    <link rel="manifest" href="{{ asset('assets/js/site.webmanifest') }}">
 
     <style>
         .questionnaire-shell {
@@ -51,6 +72,21 @@
 
         .form-check-label {
             font-weight: 400;
+        }
+
+        .form-check-input {
+            border-color: #495057;
+            border-width: 2px;
+        }
+
+        .form-check-input:checked {
+            background-color: #198754;
+            border-color: #198754;
+        }
+
+        .form-check-input:focus {
+            border-color: #198754;
+            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.2);
         }
 
         .required-mark {
