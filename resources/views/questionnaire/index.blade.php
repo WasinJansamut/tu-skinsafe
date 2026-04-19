@@ -8,7 +8,7 @@
 
     <meta property="og:title" content="แบบสอบถามยืนยันความต้องการของผู้ใช้ - TU SkinSafe">
     <meta property="og:description" content="แบบสอบถามยืนยันความต้องการของผู้ใช้สำหรับระบบต้นแบบจัดเก็บและแลกเปลี่ยนภาพถ่ายโรคผิวหนัง TU SkinSafe">
-    <meta property="og:image" content="{{ asset('assets/images/og-cover.png') }}">
+    <meta property="og:image" content="{{ asset('assets/images/logo/logo-mini.png') }}">
     <meta property="og:url" content="https://tu-skinsafe.com/questionnaire">
 
     <link rel="stylesheet" href="{{ asset('assets/css/core/libs.min.css') }}">
