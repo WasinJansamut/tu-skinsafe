@@ -262,213 +262,231 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('questionnaire.store') }}" method="post" class="d-grid gap-4" novalidate>
-                        @csrf
-
+                    @if (!empty($isClosed))
                         <div class="card section-card shadow-sm">
-                            <div class="card-body p-4">
-                                <h2 class="h4 mb-2">คำชี้แจง</h2>
-                                <p class="mb-2">สำหรับผู้ที่เคยป่วยโรคผิวหนัง แบบสอบถามนี้ใช้เพื่อยืนยันข้อกำหนดผู้ใช้ก่อนนำไปออกแบบระบบต้นแบบ</p>
-                                <div class="fw-bold mb-2">ระดับคะแนนที่ใช้</div>
-                                <div class="row g-2 text-center">
-                                    @foreach ($scaleLabels as $score => $label)
-                                        <div class="col-6 col-md">
-                                            <div class="border rounded py-2 px-2 h-100 scale-box scale-{{ $score }}">
-                                                <div class="fw-bold">{{ $score }}</div>
-                                                <div class="small">{{ $label }}</div>
-                                            </div>
-                                        </div>
-                                    @endforeach
+                            <div class="card-body p-5 text-center">
+                                <div class="mb-3 text-success fs-1">
+                                    <i class="fa-solid fa-circle-check"></i>
                                 </div>
+                                <h2 class="h3 mb-3">ปิดรับแบบสอบถามชั่วคราว</h2>
+                                <p class="text-muted mb-4">
+                                    ขอบคุณทุกท่านที่สละเวลาตอบแบบสอบถาม ขณะนี้ได้รับข้อมูลครบตามจำนวนที่ต้องการแล้ว
+                                </p>
+                                <a href="{{ route('login') }}" class="btn btn-outline-secondary">
+                                    <i class="fa-solid fa-arrow-left me-1"></i>
+                                    กลับหน้าเข้าสู่ระบบ
+                                </a>
                             </div>
                         </div>
+                    @else
+                        <form action="{{ route('questionnaire.store') }}" method="post" class="d-grid gap-4" novalidate>
+                            @csrf
 
-                        <div class="card section-card shadow-sm">
-                            <div class="card-body p-4">
-                                <h2 class="h4 mb-4">ส่วนที่ 1: ข้อมูลทั่วไปของผู้ตอบแบบสอบถาม</h2>
-                                <div class="row g-4">
-                                    <div class="col-md-4 field-block" id="field-age">
-                                        <label for="age" class="form-label">1. อายุ <span class="required-mark">*</span></label>
-                                        <div class="input-group">
-                                            <input type="number" min="1" max="120" class="form-control @error('age') is-invalid @enderror" id="age" name="age" value="{{ old('age') }}" required>
-                                            <span class="input-group-text">ปี</span>
-                                        </div>
-                                        @error('age')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <div class="col-md-8 field-block" id="field-gender">
-                                        <label class="form-label d-block">2. เพศ <span class="required-mark">*</span></label>
-                                        <div class="d-flex flex-wrap gap-3 mb-2">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="gender" id="gender_male" value="male" {{ old('gender') === 'male' ? 'checked' : '' }} required>
-                                                <label class="form-check-label" for="gender_male">ชาย</label>
+                            <div class="card section-card shadow-sm">
+                                <div class="card-body p-4">
+                                    <h2 class="h4 mb-2">คำชี้แจง</h2>
+                                    <p class="mb-2">สำหรับผู้ที่เคยป่วยโรคผิวหนัง แบบสอบถามนี้ใช้เพื่อยืนยันข้อกำหนดผู้ใช้ก่อนนำไปออกแบบระบบต้นแบบ</p>
+                                    <div class="fw-bold mb-2">ระดับคะแนนที่ใช้</div>
+                                    <div class="row g-2 text-center">
+                                        @foreach ($scaleLabels as $score => $label)
+                                            <div class="col-6 col-md">
+                                                <div class="border rounded py-2 px-2 h-100 scale-box scale-{{ $score }}">
+                                                    <div class="fw-bold">{{ $score }}</div>
+                                                    <div class="small">{{ $label }}</div>
+                                                </div>
                                             </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="gender" id="gender_female" value="female" {{ old('gender') === 'female' ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="gender_female">หญิง</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="gender" id="gender_other" value="other" {{ old('gender') === 'other' ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="gender_other">อื่นๆ</label>
-                                            </div>
-                                        </div>
-                                        <input type="text" class="form-control @error('gender_other') is-invalid @enderror" id="gender_other_text" name="gender_other" value="{{ old('gender_other') }}" placeholder="กรุณาระบุ" {{ old('gender') === 'other' ? '' : 'disabled' }}>
-                                        @error('gender')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                        @error('gender_other')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <div class="col-md-6 field-block" id="field-education_level">
-                                        <label class="form-label d-block">3. ระดับการศึกษา <span class="required-mark">*</span></label>
-                                        <div class="d-grid gap-2">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="education_level" id="education_below" value="below_bachelor" {{ old('education_level') === 'below_bachelor' ? 'checked' : '' }} required>
-                                                <label class="form-check-label" for="education_below">ต่ำกว่าปริญญาตรี</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="education_level" id="education_bachelor" value="bachelor" {{ old('education_level') === 'bachelor' ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="education_bachelor">ปริญญาตรี</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="education_level" id="education_above" value="above_bachelor" {{ old('education_level') === 'above_bachelor' ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="education_above">สูงกว่าปริญญาตรี</label>
-                                            </div>
-                                        </div>
-                                        @error('education_level')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <div class="col-md-6 field-block" id="field-treatment_count">
-                                        <label class="form-label d-block">4. เคยเข้ารับการรักษาโรคผิวหนังมากี่ครั้ง <span class="required-mark">*</span></label>
-                                        <div class="d-grid gap-2">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="treatment_count" id="treatment_1_2" value="1-2" {{ old('treatment_count') === '1-2' ? 'checked' : '' }} required>
-                                                <label class="form-check-label" for="treatment_1_2">1-2 ครั้ง</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="treatment_count" id="treatment_3_5" value="3-5" {{ old('treatment_count') === '3-5' ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="treatment_3_5">3-5 ครั้ง</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="treatment_count" id="treatment_more_5" value="more_than_5" {{ old('treatment_count') === 'more_than_5' ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="treatment_more_5">มากกว่า 5 ครั้ง</label>
-                                            </div>
-                                        </div>
-                                        @error('treatment_count')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <div class="col-md-6 field-block" id="field-used_telemedicine">
-                                        <label class="form-label d-block">5. เคยใช้ telemedicine หรือส่งภาพผิวหนังให้แพทย์ดูมาก่อนหรือไม่ <span class="required-mark">*</span></label>
-                                        <div class="d-flex flex-wrap gap-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="used_telemedicine" id="telemedicine_yes" value="yes" {{ old('used_telemedicine') === 'yes' ? 'checked' : '' }} required>
-                                                <label class="form-check-label" for="telemedicine_yes">เคย</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="used_telemedicine" id="telemedicine_no" value="no" {{ old('used_telemedicine') === 'no' ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="telemedicine_no">ไม่เคย</label>
-                                            </div>
-                                        </div>
-                                        @error('used_telemedicine')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="card section-card shadow-sm">
-                            <div class="card-body p-4">
-                                <h2 class="h4 mb-2">ส่วนที่ 2: แบบประเมินความเห็นด้วยต่อความต้องการของระบบ</h2>
-                                <p class="text-muted mb-4">โปรดเลือกคะแนน 1 ถึง 5 สำหรับแต่ละข้อ โดย 5 คือเห็นด้วยอย่างยิ่ง และ 1 คือไม่เห็นด้วยอย่างยิ่ง</p>
-
-                                <div class="d-grid gap-4">
-                                    @foreach ($sections as $section)
-                                        <div class="border rounded p-3 p-lg-4 bg-white">
-                                            <div class="mb-3">
-                                                <div class="fw-bold">{{ $section['title'] }}</div>
-                                                <div class="small text-muted">{{ $section['subtitle'] }}</div>
+                            <div class="card section-card shadow-sm">
+                                <div class="card-body p-4">
+                                    <h2 class="h4 mb-4">ส่วนที่ 1: ข้อมูลทั่วไปของผู้ตอบแบบสอบถาม</h2>
+                                    <div class="row g-4">
+                                        <div class="col-md-4 field-block" id="field-age">
+                                            <label for="age" class="form-label">1. อายุ <span class="required-mark">*</span></label>
+                                            <div class="input-group">
+                                                <input type="number" min="1" max="120" class="form-control @error('age') is-invalid @enderror" id="age" name="age" value="{{ old('age') }}" required>
+                                                <span class="input-group-text">ปี</span>
                                             </div>
+                                            @error('age')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
 
-                                            <div class="d-grid gap-4">
-                                                @foreach ($section['questions'] as $questionNumber => $questionText)
-                                                    <div class="question-item" id="field-q{{ $questionNumber }}">
-                                                        <label class="form-label fw-semibold d-block">
-                                                            {{ $questionNumber }}. {{ $questionText }} <span class="required-mark">*</span>
-                                                        </label>
-                                                        <div class="likert-group">
-                                                            @for ($score = 5; $score >= 1; $score--)
-                                                                <div class="likert-option">
-                                                                    <input
-                                                                        type="radio"
-                                                                        name="q{{ $questionNumber }}"
-                                                                        id="q{{ $questionNumber }}_{{ $score }}"
-                                                                        value="{{ $score }}"
-                                                                        {{ old('q' . $questionNumber) == $score ? 'checked' : '' }}
-                                                                        required
-                                                                    >
-                                                                    <label for="q{{ $questionNumber }}_{{ $score }}" class="scale-{{ $score }}">{{ $score }}</label>
-                                                                </div>
-                                                            @endfor
+                                        <div class="col-md-8 field-block" id="field-gender">
+                                            <label class="form-label d-block">2. เพศ <span class="required-mark">*</span></label>
+                                            <div class="d-flex flex-wrap gap-3 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="gender" id="gender_male" value="male" {{ old('gender') === 'male' ? 'checked' : '' }} required>
+                                                    <label class="form-check-label" for="gender_male">ชาย</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="gender" id="gender_female" value="female" {{ old('gender') === 'female' ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="gender_female">หญิง</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="gender" id="gender_other" value="other" {{ old('gender') === 'other' ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="gender_other">อื่นๆ</label>
+                                                </div>
+                                            </div>
+                                            <input type="text" class="form-control @error('gender_other') is-invalid @enderror" id="gender_other_text" name="gender_other" value="{{ old('gender_other') }}" placeholder="กรุณาระบุ" {{ old('gender') === 'other' ? '' : 'disabled' }}>
+                                            @error('gender')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                            @error('gender_other')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="col-md-6 field-block" id="field-education_level">
+                                            <label class="form-label d-block">3. ระดับการศึกษา <span class="required-mark">*</span></label>
+                                            <div class="d-grid gap-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="education_level" id="education_below" value="below_bachelor" {{ old('education_level') === 'below_bachelor' ? 'checked' : '' }} required>
+                                                    <label class="form-check-label" for="education_below">ต่ำกว่าปริญญาตรี</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="education_level" id="education_bachelor" value="bachelor" {{ old('education_level') === 'bachelor' ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="education_bachelor">ปริญญาตรี</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="education_level" id="education_above" value="above_bachelor" {{ old('education_level') === 'above_bachelor' ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="education_above">สูงกว่าปริญญาตรี</label>
+                                                </div>
+                                            </div>
+                                            @error('education_level')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="col-md-6 field-block" id="field-treatment_count">
+                                            <label class="form-label d-block">4. เคยเข้ารับการรักษาโรคผิวหนังมากี่ครั้ง <span class="required-mark">*</span></label>
+                                            <div class="d-grid gap-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="treatment_count" id="treatment_1_2" value="1-2" {{ old('treatment_count') === '1-2' ? 'checked' : '' }} required>
+                                                    <label class="form-check-label" for="treatment_1_2">1-2 ครั้ง</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="treatment_count" id="treatment_3_5" value="3-5" {{ old('treatment_count') === '3-5' ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="treatment_3_5">3-5 ครั้ง</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="treatment_count" id="treatment_more_5" value="more_than_5" {{ old('treatment_count') === 'more_than_5' ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="treatment_more_5">มากกว่า 5 ครั้ง</label>
+                                                </div>
+                                            </div>
+                                            @error('treatment_count')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="col-md-6 field-block" id="field-used_telemedicine">
+                                            <label class="form-label d-block">5. เคยใช้ telemedicine หรือส่งภาพผิวหนังให้แพทย์ดูมาก่อนหรือไม่ <span class="required-mark">*</span></label>
+                                            <div class="d-flex flex-wrap gap-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="used_telemedicine" id="telemedicine_yes" value="yes" {{ old('used_telemedicine') === 'yes' ? 'checked' : '' }} required>
+                                                    <label class="form-check-label" for="telemedicine_yes">เคย</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="used_telemedicine" id="telemedicine_no" value="no" {{ old('used_telemedicine') === 'no' ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="telemedicine_no">ไม่เคย</label>
+                                                </div>
+                                            </div>
+                                            @error('used_telemedicine')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card section-card shadow-sm">
+                                <div class="card-body p-4">
+                                    <h2 class="h4 mb-2">ส่วนที่ 2: แบบประเมินความเห็นด้วยต่อความต้องการของระบบ</h2>
+                                    <p class="text-muted mb-4">โปรดเลือกคะแนน 1 ถึง 5 สำหรับแต่ละข้อ โดย 5 คือเห็นด้วยอย่างยิ่ง และ 1 คือไม่เห็นด้วยอย่างยิ่ง</p>
+
+                                    <div class="d-grid gap-4">
+                                        @foreach ($sections as $section)
+                                            <div class="border rounded p-3 p-lg-4 bg-white">
+                                                <div class="mb-3">
+                                                    <div class="fw-bold">{{ $section['title'] }}</div>
+                                                    <div class="small text-muted">{{ $section['subtitle'] }}</div>
+                                                </div>
+
+                                                <div class="d-grid gap-4">
+                                                    @foreach ($section['questions'] as $questionNumber => $questionText)
+                                                        <div class="question-item" id="field-q{{ $questionNumber }}">
+                                                            <label class="form-label fw-semibold d-block">
+                                                                {{ $questionNumber }}. {{ $questionText }} <span class="required-mark">*</span>
+                                                            </label>
+                                                            <div class="likert-group">
+                                                                @for ($score = 5; $score >= 1; $score--)
+                                                                    <div class="likert-option">
+                                                                        <input
+                                                                            type="radio"
+                                                                            name="q{{ $questionNumber }}"
+                                                                            id="q{{ $questionNumber }}_{{ $score }}"
+                                                                            value="{{ $score }}"
+                                                                            {{ old('q' . $questionNumber) == $score ? 'checked' : '' }}
+                                                                            required
+                                                                        >
+                                                                        <label for="q{{ $questionNumber }}_{{ $score }}" class="scale-{{ $score }}">{{ $score }}</label>
+                                                                    </div>
+                                                                @endfor
+                                                            </div>
+                                                            <div class="likert-help">
+                                                                <span>เห็นด้วยอย่างยิ่ง</span>
+                                                                <span>เห็นด้วย</span>
+                                                                <span>ปานกลาง</span>
+                                                                <span>ไม่เห็นด้วย</span>
+                                                                <span>ไม่เห็นด้วยอย่างยิ่ง</span>
+                                                            </div>
+                                                            @error('q' . $questionNumber)
+                                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                            @enderror
                                                         </div>
-                                                        <div class="likert-help">
-                                                            <span>เห็นด้วยอย่างยิ่ง</span>
-                                                            <span>เห็นด้วย</span>
-                                                            <span>ปานกลาง</span>
-                                                            <span>ไม่เห็นด้วย</span>
-                                                            <span>ไม่เห็นด้วยอย่างยิ่ง</span>
-                                                        </div>
-                                                        @error('q' . $questionNumber)
-                                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                                        @enderror
-                                                    </div>
-                                                @endforeach
+                                                    @endforeach
+                                                </div>
                                             </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card section-card shadow-sm">
+                                <div class="card-body p-4">
+                                    <h2 class="h4 mb-4">ส่วนที่ 3: ความกังวลและข้อเสนอแนะ</h2>
+                                    <div class="row g-4">
+                                        <div class="col-12">
+                                            <label for="main_concern" class="form-label">21. ท่านกังวลเรื่องใดมากที่สุด หากมีระบบเก็บและแลกเปลี่ยนข้อมูลภาพถ่ายโรคผิวหนัง</label>
+                                            <textarea class="form-control" id="main_concern" name="main_concern" rows="4">{{ old('main_concern') }}</textarea>
                                         </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card section-card shadow-sm">
-                            <div class="card-body p-4">
-                                <h2 class="h4 mb-4">ส่วนที่ 3: ความกังวลและข้อเสนอแนะ</h2>
-                                <div class="row g-4">
-                                    <div class="col-12">
-                                        <label for="main_concern" class="form-label">21. ท่านกังวลเรื่องใดมากที่สุด หากมีระบบเก็บและแลกเปลี่ยนข้อมูลภาพถ่ายโรคผิวหนัง</label>
-                                        <textarea class="form-control" id="main_concern" name="main_concern" rows="4">{{ old('main_concern') }}</textarea>
-                                    </div>
-                                    <div class="col-12">
-                                        <label for="additional_features" class="form-label">22. ท่านคิดว่าระบบแบบนี้ควรมีคุณสมบัติหรือฟังก์ชันใดเพิ่มเติม</label>
-                                        <textarea class="form-control" id="additional_features" name="additional_features" rows="4">{{ old('additional_features') }}</textarea>
-                                    </div>
-                                    <div class="col-12">
-                                        <label for="other_suggestions" class="form-label">23. ข้อเสนอแนะอื่น ๆ เพื่อปรับปรุงระบบให้เหมาะสมกับผู้ป่วย</label>
-                                        <textarea class="form-control" id="other_suggestions" name="other_suggestions" rows="4">{{ old('other_suggestions') }}</textarea>
+                                        <div class="col-12">
+                                            <label for="additional_features" class="form-label">22. ท่านคิดว่าระบบแบบนี้ควรมีคุณสมบัติหรือฟังก์ชันใดเพิ่มเติม</label>
+                                            <textarea class="form-control" id="additional_features" name="additional_features" rows="4">{{ old('additional_features') }}</textarea>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="other_suggestions" class="form-label">23. ข้อเสนอแนะอื่น ๆ เพื่อปรับปรุงระบบให้เหมาะสมกับผู้ป่วย</label>
+                                            <textarea class="form-control" id="other_suggestions" name="other_suggestions" rows="4">{{ old('other_suggestions') }}</textarea>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                            <a href="{{ route('login') }}" class="btn btn-outline-secondary">
-                                <i class="fa-solid fa-arrow-left me-1"></i>
-                                กลับหน้าเข้าสู่ระบบ
-                            </a>
-                            <button type="submit" class="btn btn-success btn-lg px-5">
-                                <i class="fa-solid fa-paper-plane me-2"></i>
-                                ส่งแบบสอบถาม
-                            </button>
-                        </div>
-                    </form>
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                <a href="{{ route('login') }}" class="btn btn-outline-secondary">
+                                    <i class="fa-solid fa-arrow-left me-1"></i>
+                                    กลับหน้าเข้าสู่ระบบ
+                                </a>
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="fa-solid fa-paper-plane me-2"></i>
+                                    ส่งแบบสอบถาม
+                                </button>
+                            </div>
+                        </form>
+                    @endif
                 </div>
             </div>
         </div>
@@ -484,6 +502,10 @@
             const form = document.querySelector('form[action="{{ route('questionnaire.store') }}"]');
             const genderRadios = document.querySelectorAll('input[name="gender"]');
             const genderOtherInput = document.getElementById('gender_other_text');
+
+            if (!form) {
+                return;
+            }
 
             function syncGenderOther() {
                 const selected = document.querySelector('input[name="gender"]:checked');

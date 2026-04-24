@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\DB;
 
 class QuestionnaireController extends Controller
 {
+    private function isClosed(): bool
+    {
+        return true;
+    }
+
     private function sections(): array
     {
         return [
@@ -107,12 +112,19 @@ class QuestionnaireController extends Controller
     public function index()
     {
         $sections = $this->sections();
+        $isClosed = $this->isClosed();
 
-        return view('questionnaire.index', compact('sections'));
+        return view('questionnaire.index', compact('sections', 'isClosed'));
     }
 
     public function store(Request $request)
     {
+        if ($this->isClosed()) {
+            return redirect()
+                ->route('questionnaire.index')
+                ->with('info', 'ปิดรับแบบสอบถามชั่วคราว ขอบคุณสำหรับความสนใจ');
+        }
+
         $questionRules = [];
         for ($i = 1; $i <= 20; $i++) {
             $questionRules['q' . $i] = ['required', 'integer', 'between:1,5'];
