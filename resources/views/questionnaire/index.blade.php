@@ -148,27 +148,27 @@
             color: #fff !important;
         }
 
-        .likert-option input[type="radio"]:checked + .scale-5 {
+        .likert-option input[type="radio"]:checked+.scale-5 {
             background: #198754;
             color: #fff !important;
         }
 
-        .likert-option input[type="radio"]:checked + .scale-4 {
+        .likert-option input[type="radio"]:checked+.scale-4 {
             background: #5abf69;
             color: #fff !important;
         }
 
-        .likert-option input[type="radio"]:checked + .scale-3 {
+        .likert-option input[type="radio"]:checked+.scale-3 {
             background: #ffc107;
             color: #212529 !important;
         }
 
-        .likert-option input[type="radio"]:checked + .scale-2 {
+        .likert-option input[type="radio"]:checked+.scale-2 {
             background: #fd7e14;
             color: #fff !important;
         }
 
-        .likert-option input[type="radio"]:checked + .scale-1 {
+        .likert-option input[type="radio"]:checked+.scale-1 {
             background: #dc3545;
             color: #fff !important;
         }
@@ -193,7 +193,7 @@
             background: #f8d7da;
         }
 
-        .likert-option input[type="radio"]:checked + label {
+        .likert-option input[type="radio"]:checked+label {
             box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
         }
 
@@ -430,8 +430,7 @@
                                                                             id="q{{ $questionNumber }}_{{ $score }}"
                                                                             value="{{ $score }}"
                                                                             {{ old('q' . $questionNumber) == $score ? 'checked' : '' }}
-                                                                            required
-                                                                        >
+                                                                            required>
                                                                         <label for="q{{ $questionNumber }}_{{ $score }}" class="scale-{{ $score }}">{{ $score }}</label>
                                                                     </div>
                                                                 @endfor
@@ -498,7 +497,7 @@
     <script src="{{ Helper::versionedAsset('assets/js/sidebar.js') }}"></script>
     <script src="{{ asset('assets/sweetalert2/js/sweetalert2.all.min.js') }}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('form[action="{{ route('questionnaire.store') }}"]');
             const genderRadios = document.querySelectorAll('input[name="gender"]');
             const genderOtherInput = document.getElementById('gender_other_text');
@@ -517,7 +516,7 @@
                 }
             }
 
-            genderRadios.forEach(function (radio) {
+            genderRadios.forEach(function(radio) {
                 radio.addEventListener('change', syncGenderOther);
             });
 
@@ -546,22 +545,29 @@
                     return;
                 }
 
-                document.querySelectorAll('.missing-focus').forEach(function (node) {
+                document.querySelectorAll('.missing-focus').forEach(function(node) {
                     node.classList.remove('missing-focus');
                 });
 
                 const targetBlock = document.getElementById('field-' + field.name) || field.element.closest('.field-block, .question-item, .col-12') || field.element;
                 targetBlock.classList.add('missing-focus');
-                targetBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetBlock.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
 
                 const isVisible = !!(field.element.offsetWidth || field.element.offsetHeight || field.element.getClientRects().length);
                 if (isVisible) {
-                    field.element.focus({ preventScroll: true });
+                    field.element.focus({
+                        preventScroll: true
+                    });
                 } else {
                     const targetLabel = targetBlock.querySelector('label[for]');
                     if (targetLabel) {
                         targetLabel.setAttribute('tabindex', '-1');
-                        targetLabel.focus({ preventScroll: true });
+                        targetLabel.focus({
+                            preventScroll: true
+                        });
                     }
                 }
             }
@@ -571,42 +577,63 @@
 
                 const ageInput = document.getElementById('age');
                 if (!ageInput.value.trim()) {
-                    missing.push({ name: 'age', element: ageInput });
+                    missing.push({
+                        name: 'age',
+                        element: ageInput
+                    });
                 }
 
                 const selectedGender = document.querySelector('input[name="gender"]:checked');
                 if (!selectedGender) {
-                    missing.push({ name: 'gender', element: document.getElementById('gender_male') });
+                    missing.push({
+                        name: 'gender',
+                        element: document.getElementById('gender_male')
+                    });
                 } else if (selectedGender.value === 'other' && !genderOtherInput.value.trim()) {
-                    missing.push({ name: 'gender_other', element: genderOtherInput });
+                    missing.push({
+                        name: 'gender_other',
+                        element: genderOtherInput
+                    });
                 }
 
                 const educationInput = document.querySelector('input[name="education_level"]:checked');
                 if (!educationInput) {
-                    missing.push({ name: 'education_level', element: document.getElementById('education_below') });
+                    missing.push({
+                        name: 'education_level',
+                        element: document.getElementById('education_below')
+                    });
                 }
 
                 const treatmentInput = document.querySelector('input[name="treatment_count"]:checked');
                 if (!treatmentInput) {
-                    missing.push({ name: 'treatment_count', element: document.getElementById('treatment_1_2') });
+                    missing.push({
+                        name: 'treatment_count',
+                        element: document.getElementById('treatment_1_2')
+                    });
                 }
 
                 const telemedicineInput = document.querySelector('input[name="used_telemedicine"]:checked');
                 if (!telemedicineInput) {
-                    missing.push({ name: 'used_telemedicine', element: document.getElementById('telemedicine_yes') });
+                    missing.push({
+                        name: 'used_telemedicine',
+                        element: document.getElementById('telemedicine_yes')
+                    });
                 }
 
                 for (let i = 1; i <= 20; i++) {
                     const selectedScore = document.querySelector('input[name="q' + i + '"]:checked');
                     if (!selectedScore) {
-                        missing.push({ name: 'q' + i, element: document.getElementById('q' + i + '_5') });
+                        missing.push({
+                            name: 'q' + i,
+                            element: document.getElementById('q' + i + '_5')
+                        });
                     }
                 }
 
                 return missing;
             }
 
-            form.addEventListener('submit', function (event) {
+            form.addEventListener('submit', function(event) {
                 const missingFields = getMissingFields();
 
                 if (!missingFields.length) {
@@ -616,7 +643,7 @@
                 event.preventDefault();
 
                 const listHtml = '<ul class="text-start ps-3 mb-0">' + missingFields
-                    .map(function (item) {
+                    .map(function(item) {
                         return '<li>' + fieldLabels[item.name] + '</li>';
                     })
                     .join('') + '</ul>';
@@ -627,7 +654,7 @@
                     html: '<div class="text-start">กรุณากรอกหรือเลือกข้อมูลต่อไปนี้ให้ครบก่อนส่งแบบสอบถาม</div>' + listHtml,
                     confirmButtonText: 'ตกลง',
                     showCloseButton: true,
-                }).then(function () {
+                }).then(function() {
                     focusMissingField(missingFields[0]);
                 });
             });
