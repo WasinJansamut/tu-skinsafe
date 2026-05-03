@@ -77,6 +77,19 @@
             flex: 0 0 auto;
         }
 
+        .mobile-topbar-back {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            border: 1px solid rgba(17, 24, 39, 0.08);
+            background: rgba(255, 255, 255, 0.9);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #111827;
+            flex: 0 0 auto;
+        }
+
         .mobile-shell a {
             color: inherit;
             text-decoration: none;
@@ -308,7 +321,9 @@
 
     <div class="mobile-shell">
         <div class="mobile-topbar">
-            <div style="width:42px;"></div>
+            <button type="button" class="mobile-topbar-back" aria-label="ย้อนกลับ" onclick="window.history.back()">
+                <i class="fa-solid fa-arrow-left fa-lg"></i>
+            </button>
             <h1 class="mobile-topbar-title">{{ $page_title ?? 'ข้อมูลสถานะผู้เข้าร่วม' }}</h1>
             <a href="{{ route('app.notifications') }}" class="mobile-topbar-action text-decoration-none" aria-label="การแจ้งเตือน">
                 <i class="fa-regular fa-bell fa-lg"></i>

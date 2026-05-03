@@ -77,6 +77,19 @@
             flex: 0 0 auto;
         }
 
+        .mobile-topbar-back {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            border: 1px solid rgba(17, 24, 39, 0.08);
+            background: rgba(255, 255, 255, 0.9);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #111827;
+            flex: 0 0 auto;
+        }
+
         .hero-card {
             border: 1px solid rgba(76, 89, 255, 0.08);
             border-radius: 28px;
@@ -107,7 +120,7 @@
 
 
         .hero-title {
-            font-size: 1.42rem;
+            font-size: 1.0rem;
             font-weight: 700;
             color: #1f2937;
             margin-bottom: 4px;
@@ -118,6 +131,14 @@
             line-height: 1.5;
             color: #374151;
             margin: 0;
+        }
+
+        .page-card {
+            border-radius: 22px;
+            background: #ffffff;
+            border: 1px solid rgba(17, 24, 39, 0.07);
+            box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
+            padding: 14px;
         }
 
         .section-card {
@@ -168,6 +189,15 @@
             background: rgba(69, 82, 208, 0.10);
             color: #4552d0;
             flex: 0 0 auto;
+        }
+
+        .list-icon--custom {
+            background: var(--list-bg, rgba(69, 82, 208, 0.10));
+            color: var(--list-color, #4552d0);
+        }
+
+        .list-item--stacked {
+            align-items: flex-start;
         }
 
         .list-body {
@@ -272,52 +302,51 @@
 @section('content')
     <div class="mobile-shell">
         <div class="mobile-topbar">
-            <div style="width:42px;"></div>
+            <button type="button" class="mobile-topbar-back" aria-label="ย้อนกลับ" onclick="window.history.back()">
+                <i class="fa-solid fa-arrow-left fa-lg"></i>
+            </button>
             <h1 class="mobile-topbar-title">{{ $page_title ?? 'หน้าหลัก' }}</h1>
             <a href="{{ route('app.notifications') }}" class="mobile-topbar-action text-decoration-none" aria-label="การแจ้งเตือน">
                 <i class="fa-regular fa-bell fa-lg"></i>
             </a>
         </div>
 
-        {{-- <div class="hero-card mb-3">
-            <div class="hero-title">{{ $hero_title ?? ($page_title ?? 'หน้าหลัก') }}</div>
-            <p class="hero-subtitle">{{ $hero_text ?? ($page_subtitle ?? '') }}</p>
-        </div> --}}
+        <div class="page-card mb-3">
+            @if (request()->routeIs('app.about'))
+                <div class="hero-card mb-3">
+                    <div class="hero-icon">
+                        <img src="{{ asset('assets/images/logo/logo_horizontal_transparent.png') }}" alt="TU SkinSafe">
+                    </div>
+                    <div class="hero-title">ระบบต้นแบบจัดเก็บและส่งต่อภาพถ่ายโรคผิวหนัง</div>
 
-        @if (request()->routeIs('app.about'))
-            <div class="hero-card mb-3">
-                <div class="hero-icon">
-                    <img src="{{ asset('assets/images/logo/logo_horizontal_transparent.png') }}" alt="TU SkinSafe">
                 </div>
-                <div class="hero-title">ระบบต้นแบบ</div>
-                <p class="hero-subtitle">จัดเก็บและส่งต่อภาพถ่ายโรคผิวหนัง</p>
-            </div>
-        @endif
+            @endif
 
+            <div class="section-card">
+                <div class="section-header">
+                    <h2 class="section-title">รายการหลัก</h2>
+                    <a href="#" class="section-link">{{ $primary_label ?? 'ดำเนินการ' }}</a>
+                </div>
 
-        <div class="section-card mb-3">
-            <div class="section-header">
-                <h2 class="section-title">รายการหลัก</h2>
-                <a href="#" class="section-link">{{ $primary_label ?? 'ดำเนินการ' }}</a>
-            </div>
-
-            @foreach ($items ?? [] as $item)
-                <div class="list-item">
-                    <div class="list-icon">
-                        <i class="fa-solid fa-circle-dot"></i>
-                    </div>
-                    <div class="list-body">
-                        <p class="list-title">{{ $item['title'] ?? '' }}</p>
-                        <p class="list-meta">{{ $item['meta'] ?? '' }}</p>
-                    </div>
-                    @if (!empty($item['state']))
-                        <div class="list-state">
-                            <i class="fa-solid fa-circle"></i>
-                            {{ $item['state'] }}
+                @foreach ($items ?? [] as $item)
+                    <div class="list-item {{ !empty($item['meta']) && !empty($item['title']) ? 'list-item--stacked' : '' }}">
+                        <div class="list-icon {{ !empty($item['icon']) ? 'list-icon--custom' : '' }}"
+                            @if (!empty($item['bg']) || !empty($item['color'])) style="{{ !empty($item['bg']) ? '--list-bg: ' . $item['bg'] . ';' : '' }}{{ !empty($item['color']) ? ' --list-color: ' . $item['color'] . ';' : '' }}" @endif>
+                            <i class="fa-solid {{ $item['icon'] ?? 'fa-circle-dot' }}"></i>
                         </div>
-                    @endif
-                </div>
-            @endforeach
+                        <div class="list-body">
+                            <p class="list-title">{{ $item['title'] ?? '' }}</p>
+                            <p class="list-meta">{{ $item['meta'] ?? '' }}</p>
+                        </div>
+                        @if (!empty($item['state']))
+                            <div class="list-state">
+                                <i class="fa-solid fa-circle"></i>
+                                {{ $item['state'] }}
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
         </div>
 
         <div class="page-spacer"></div>
