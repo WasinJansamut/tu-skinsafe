@@ -11,12 +11,20 @@
                                 <li class="breadcrumb-item">
                                     <a href="{{ route('home') }}">หน้าหลัก</a>
                                 </li>
+                                <li class="breadcrumb-item">
+                                    แบบสอบถามยืนยันความต้องการผู้ใช้
+                                </li>
                                 <li class="breadcrumb-item active" aria-current="page">ผลรวมแบบสอบถาม</li>
                             </ol>
                         </nav>
                     </div>
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
+                            <div class="mb-2">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+                                    แบบสอบถามยืนยันความต้องการผู้ใช้
+                                </span>
+                            </div>
                             <h3 class="mb-0">ผลรวมแบบสอบถาม</h3>
                             <div class="text-muted">จำนวนผู้ตอบทั้งหมด {{ number_format($responsesCount) }} ราย</div>
                         </div>

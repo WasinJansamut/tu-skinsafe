@@ -23,6 +23,14 @@ class HomeController extends Controller
      */
     public function index(Request $request)
     {
-        return view('home');
+        $user = $request->user();
+
+        if ($user?->role === 'research_participant') {
+            return view('home');
+        }
+
+        return view('admin.home', [
+            'user' => $user,
+        ]);
     }
 }

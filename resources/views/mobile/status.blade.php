@@ -232,6 +232,42 @@
             line-height: 1.45;
         }
 
+        .status-actions {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .status-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            min-height: 48px;
+            border-radius: 16px;
+            border: 1px solid transparent;
+            font-size: 0.94rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .status-action--call {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: rgba(34, 197, 94, 0.18);
+        }
+
+        .status-action--logout {
+            background: #fff5f5;
+            color: #b42318;
+            border-color: rgba(239, 68, 68, 0.18);
+        }
+
+        .status-action i {
+            font-size: 0.95rem;
+        }
+
         .bottom-nav {
             position: fixed;
             left: 50%;
@@ -388,6 +424,21 @@
                         {{ $paymentStateLabel }}
                     </div>
                 </div>
+            </div>
+
+            <div class="status-actions">
+                <a href="tel:0800808714" class="status-action status-action--call">
+                    <i class="fa-solid fa-phone"></i>
+                    ติดต่อผู้วิจัย
+                </a>
+
+                <form action="{{ route('logout') }}" method="post" class="m-0">
+                    @csrf
+                    <button type="submit" class="status-action status-action--logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        ออกจากระบบ
+                    </button>
+                </form>
             </div>
         </div>
     </div>
