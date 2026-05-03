@@ -349,10 +349,20 @@
             $assessmentStateLabel = 'ยังไม่ผ่าน';
         }
 
+        $paymentStatusText = trim((string) (data_get($currentUser, 'status_payto_research_participant') ?? ''));
+        $compensationChannelText = trim((string) (data_get($currentUser, 'compensation_channel') ?? ''));
         $paymentRaw = trim((string) (data_get($currentUser, 'payment_status') ?? data_get($currentUser, 'payment_paid_at') ?? ''));
-        $paymentDone = $paymentRaw !== '';
-        $paymentStateClass = $paymentDone ? 'status-badge--success' : 'status-badge--warning';
-        $paymentStateLabel = $paymentDone ? 'ชำระแล้ว' : 'ยังไม่ชำระ';
+
+        if ($compensationChannelText === 'ไม่รับค่าตอบแทน') {
+            $paymentStateClass = 'status-badge--success';
+            $paymentStateLabel = 'ไม่ขอรับค่าตอบแทน';
+        } elseif ($paymentStatusText === 'ชำระแล้ว' || $paymentRaw !== '') {
+            $paymentStateClass = 'status-badge--success';
+            $paymentStateLabel = 'ชำระแล้ว';
+        } else {
+            $paymentStateClass = 'status-badge--danger';
+            $paymentStateLabel = 'ยังไม่ชำระ';
+        }
     @endphp
 
     <div class="mobile-shell">
@@ -417,7 +427,9 @@
                 <div class="status-row">
                     <div class="status-label">
                         <p class="status-title">ช่องทางการจ่ายค่าตอบแทน</p>
-                        <p class="status-desc">{{ $currentUser->compensation_channel ?? 'ยังไม่ได้ระบุ' }}</p>
+                        <p class="status-desc">
+                            {{ $compensationChannelText !== '' ? $compensationChannelText : 'ยังไม่ได้ระบุ' }}
+                        </p>
                     </div>
                     <div class="status-badge {{ $paymentStateClass }}">
                         <i class="fa-solid fa-circle"></i>

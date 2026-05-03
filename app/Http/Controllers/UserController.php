@@ -86,6 +86,7 @@ class UserController extends Controller
                 'name' => ['required', 'string', 'max:255'],
                 'username' => ['required', 'string', 'max:30', 'alpha_dash', Rule::unique('users', 'username')],
                 'compensation_channel' => ['required', 'string', 'max:255'],
+                'no_compensation' => ['nullable', 'in:1'],
                 'password' => ['required', 'string', 'min:5', 'max:255', 'confirmed'],
                 'password_confirmation' => ['required', 'string', 'min:5', 'max:255'],
             ],
@@ -98,6 +99,7 @@ class UserController extends Controller
                 'compensation_channel.required' => 'กรุณากรอกช่องทางการจ่ายค่าตอบแทน',
                 'compensation_channel.string' => 'ช่องทางการจ่ายค่าตอบแทนต้องเป็นข้อความ',
                 'compensation_channel.max' => 'ช่องทางการจ่ายค่าตอบแทนต้องไม่เกิน 255 ตัวอักษร',
+                'no_compensation.in' => 'รูปแบบตัวเลือกไม่ถูกต้อง',
                 'password.required' => 'กรุณากรอกรหัสผ่าน',
                 'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 5 ตัวอักษร',
                 'password.confirmed' => 'รหัสผ่านไม่ตรงกัน',
@@ -106,12 +108,16 @@ class UserController extends Controller
         );
 
         $placeholderEmail = sprintf('participant-%s@tu-skinsafe.local', Str::uuid()->toString());
+        $noCompensation = $request->boolean('no_compensation');
+        $compensationChannel = $noCompensation ? 'ไม่รับค่าตอบแทน' : trim($validated['compensation_channel']);
+        $paymentStatus = $noCompensation ? 'ไม่ขอรับค่าตอบแทน' : 'รอชำระค่าตอบแทน';
 
         $user = User::create([
             'name' => trim($validated['name']),
             'username' => strtolower(trim($validated['username'])),
             'email' => $placeholderEmail,
-            'compensation_channel' => $validated['compensation_channel'],
+            'compensation_channel' => $compensationChannel,
+            'status_payto_research_participant' => $paymentStatus,
             'role' => 'research_participant',
             'password' => Hash::make($validated['password']),
         ]);

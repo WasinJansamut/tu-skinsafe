@@ -167,9 +167,9 @@
                 <form id="form_participant_register" action="{{ route('participant.register') }}" method="post" novalidate>
                     @csrf
                     <div class="modal-body">
-                        <div class="alert alert-warning mb-3">
+                        {{-- <div class="alert alert-warning mb-3">
                             กรุณาอ่านคำชี้แจงในการเข้าร่วมวิจัยก่อน จึงจะสามารถกรอกข้อมูลและบันทึกการสมัครได้
-                        </div>
+                        </div> --}}
 
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-3 p-3 rounded-3 bg-light">
                             <div>
@@ -192,13 +192,22 @@
 
                             <div class="col-12">
                                 <label for="participant_compensation_channel" class="form-label">ช่องทางและรายละเอียดการจ่ายค่าตอบแทน <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="participant_compensation_channel" name="compensation_channel" maxlength="255" autocomplete="off" placeholder="เช่น โอนเงินผ่านบัญชีธนาคาร / พร้อมเพย์ / เงินสด" required>
+                                <input type="text" class="form-control" id="participant_compensation_channel" name="compensation_channel" maxlength="255" autocomplete="off" placeholder="กรอกหมายเลขพร้อมเพย์ หรือบัญชีธนาคาร" required>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" name="no_compensation" value="1" id="participant_no_compensation">
+                                    <label class="form-check-label" for="participant_no_compensation">
+                                        ไม่รับค่าตอบแทน
+                                    </label>
+                                </div>
+                                <div class="form-text">หากเลือกตัวเลือกนี้ ระบบจะบันทึกว่า “ไม่ขอรับค่าตอบแทน” โดยอัตโนมัติ</div>
                             </div>
 
                             <div class="col-12 col-md-6">
                                 <label for="participant_username" class="form-label">ชื่อผู้ใช้งาน <span class="text-danger">*</span> <small class="text-muted">ใช้เข้าสู่ระบบ</small></label>
                                 <input type="text" class="form-control" id="participant_username" name="username" maxlength="30" autocomplete="off" required>
                             </div>
+
+
                             <div class="col-12 col-md-6">
                                 <label for="participant_password" class="form-label">รหัสผ่าน <span class="text-danger">*</span></label>
                                 <input type="password" class="form-control" id="participant_password" name="password" maxlength="255" autocomplete="new-password" required>
@@ -208,6 +217,7 @@
                                 <label for="participant_password_confirmation" class="form-label">ยืนยันรหัสผ่าน <span class="text-danger">*</span></label>
                                 <input type="password" class="form-control" id="participant_password_confirmation" name="password_confirmation" maxlength="255" autocomplete="new-password" required>
                             </div>
+
                         </div>
                     </div>
 
@@ -243,12 +253,21 @@
                             การเข้าร่วมวิจัยนี้เป็นไปโดยความสมัครใจ ผู้เข้าร่วมสามารถถอนตัวได้ทุกเมื่อโดยไม่กระทบสิทธิของท่าน
                         </p>
                         <p class="mb-3" style="text-indent: 1.5em;">
-                            หากท่านทดสอบการใช้งานและประเมินผลสำเร็จ จะมีค่าตอบแทนตามที่โครงการกำหนด
-                            <span class="fw-semibold">จำนวนเงิน 300 บาท</span>
-                            โดยจะจ่ายผ่านช่องทางที่ท่านระบุไว้ในแบบฟอร์มสมัครเข้าร่วมวิจัยหลังจากที่ท่านทำแบบทดสอบและประเมินผลเสร็จสมบูรณ์แล้ว
-                            <span class="fw-semibold">ภาพใน 24 ชั่วโมงหลังทดสอบระบบต้นแบบและทำแบบประเมินเสร็จสิ้น ท่านสามารถเข้ามาดูสถานะได้ในระบบต้นแบบนี้ จากส่วนข้อมูลผู้เข้าร่วมวิจัย</span>
+                            ผู้วิจัยขอมอบค่าตอบแทนจำนวน <span class="fw-semibold">300 บาท</span> แก่ผู้เข้าร่วมวิจัยที่ทดสอบการใช้งานและตอบแบบประเมินครบถ้วนสมบูรณ์
+                            โดยจะดำเนินการโอนเงินผ่านช่องทางที่ท่านระบุไว้ในแบบฟอร์มสมัครเข้าร่วมวิจัย ภายใน
+                            <span class="fw-semibold">24 ชั่วโมง</span> หลังเสร็จสิ้นการทดสอบและการประเมินผล
                         </p>
-                        <p class="mb-0" style="text-indent: 1.5em;">
+                        <p class="mb-3" style="text-indent: 1.5em;">
+                            หากท่านประสงค์รับค่าตอบแทน กรุณาระบุชื่อและช่องทางรับเงินในแบบฟอร์มถัดไป ทั้งนี้ข้อมูลดังกล่าวจะใช้สำหรับการโอนเงินเท่านั้น
+                        </p>
+                        <p class="mb-3" style="text-indent: 1.5em;">
+                            หากท่านไม่ประสงค์รับค่าตอบแทน ท่านสามารถเลือก <span class="fw-semibold">"ไม่ขอรับค่าตอบแทน"</span> ได้ เพื่อคงความเป็นส่วนตัวสูงสุด โดยระบบจะไม่จัดเก็บข้อมูลระบุตัวตน เช่น ชื่อหรือเลขบัญชี และการตอบแบบประเมินของท่านจะถูกจัดเก็บในลักษณะไม่ระบุตัวตน (Anonymous)
+                        </p>
+                        <div class="text-center my-3">
+                            <img class="pe-none" src="{{ asset('assets/images/auth/profile.png') }}" height="80" loading="lazy">
+                        </div>
+
+                        <p class="mb-0 mt-3" style="text-indent: 1.5em;">
                             ข้อมูลที่เก็บจะใช้เพื่อการวิจัยเท่านั้น และจะดำเนินการตามแนวทางการคุ้มครองข้อมูลส่วนบุคคลและจริยธรรมการวิจัยที่เกี่ยวข้อง
                         </p>
                     </div>
@@ -281,6 +300,8 @@
                 keyboard: false
             }) : null;
             const participantRegisterFields = $('#participantRegisterFields');
+            const participantNoCompensation = $('#participant_no_compensation');
+            const participantCompensationChannel = $('#participant_compensation_channel');
             let researchNoteAccepted = false;
 
             const lockParticipantForm = function() {
@@ -298,6 +319,17 @@
                     unlockParticipantForm();
                 } else {
                     lockParticipantForm();
+                }
+            };
+
+            const syncCompensationField = function() {
+                if (participantNoCompensation.is(':checked')) {
+                    participantCompensationChannel.val('ไม่รับค่าตอบแทน').prop('readonly', true).prop('required', false);
+                } else {
+                    participantCompensationChannel.prop('readonly', false).prop('required', true);
+                    if (participantCompensationChannel.val() === 'ไม่รับค่าตอบแทน') {
+                        participantCompensationChannel.val('');
+                    }
                 }
             };
 
@@ -356,9 +388,16 @@
                 $('#participant_name').trigger('focus');
             });
 
+            participantNoCompensation.on('change', function() {
+                syncCompensationField();
+            });
+
             $('#participantRegisterModal').on('shown.bs.modal', function() {
                 researchNoteAccepted = false;
+                participantNoCompensation.prop('checked', false);
+                participantCompensationChannel.prop('readonly', false).val('');
                 refreshParticipantFormState();
+                syncCompensationField();
 
                 if (researchNoteModal) {
                     researchNoteModal.show();
@@ -367,6 +406,8 @@
 
             $('#participantRegisterModal').on('hidden.bs.modal', function() {
                 $('#form_participant_register')[0].reset();
+                participantNoCompensation.prop('checked', false);
+                participantCompensationChannel.prop('readonly', false).val('');
                 researchNoteAccepted = false;
                 refreshParticipantFormState();
                 $('#participantRegisterSubmit').html('<i class="fa-solid fa-floppy-disk me-1"></i> สมัครเข้าร่วมวิจัย');
@@ -379,6 +420,7 @@
             });
 
             refreshParticipantFormState();
+            syncCompensationField();
 
             $("#form_participant_register").on("submit", function(e) {
                 e.preventDefault();
@@ -401,6 +443,8 @@
 
                     return;
                 }
+
+                syncCompensationField();
 
                 submitButton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> กำลังสมัคร');
 

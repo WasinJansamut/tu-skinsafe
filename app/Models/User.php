@@ -22,6 +22,7 @@ class User extends Authenticatable
         'username',
         'email',
         'compensation_channel',
+        'status_payto_research_participant',
         'password',
         'role',
     ];
