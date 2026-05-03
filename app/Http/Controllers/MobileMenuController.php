@@ -2,11 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserTaskCompletion;
+use Illuminate\Http\Request;
+
 class MobileMenuController extends Controller
 {
+    private const SYSTEM_OVERVIEW_TASK_KEY = 'system_overview';
+
     private function page(array $data)
     {
         return view('mobile.page', $data);
+    }
+
+    private function isTaskCompleted(int $userId, string $taskKey): bool
+    {
+        return UserTaskCompletion::query()
+            ->where('user_id', $userId)
+            ->where('task_key', $taskKey)
+            ->whereNotNull('completed_at')
+            ->exists();
     }
 
     public function upload()
@@ -156,6 +170,35 @@ class MobileMenuController extends Controller
             'page_title' => 'ข้อมูลสถานะผู้เข้าร่วม',
             'current_user' => auth()->user(),
         ]);
+    }
+
+    public function systemOverview()
+    {
+        $user = auth()->user();
+
+        return view('mobile.system_overview', [
+            'page_title' => 'แนะนำภาพรวมของระบบต้นแบบ',
+            'page_subtitle' => 'แนะนำภาพรวมของระบบต้นแบบและฟังก์ชันพื้นฐาน',
+            'overview_completed' => $this->isTaskCompleted($user->id, self::SYSTEM_OVERVIEW_TASK_KEY),
+            'video_url' => asset('assets/images/pro/plugins/video-1.mp4'),
+        ]);
+    }
+
+    public function completeSystemOverview(Request $request)
+    {
+        $user = $request->user();
+
+        UserTaskCompletion::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'task_key' => self::SYSTEM_OVERVIEW_TASK_KEY,
+            ],
+            [
+                'completed_at' => now(),
+            ]
+        );
+
+        return redirect()->route('home')->with('success', 'บันทึกการรับทราบขั้นแนะนำภาพรวมของระบบเรียบร้อยแล้ว');
     }
 
     public function notifications()

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserTaskCompletion;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -24,9 +25,17 @@ class HomeController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $overviewTaskKey = 'system_overview';
+        $overviewTaskCompleted = false;
 
         if ($user?->role === 'research_participant') {
-            return view('home');
+            $overviewTaskCompleted = UserTaskCompletion::query()
+                ->where('user_id', $user->id)
+                ->where('task_key', $overviewTaskKey)
+                ->whereNotNull('completed_at')
+                ->exists();
+
+            return view('home', compact('overviewTaskCompleted'));
         }
 
         return view('admin.home', [

@@ -209,6 +209,103 @@
             font-size: 0.95rem;
         }
 
+        .task-card {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            min-height: 88px;
+            padding: 14px 46px 14px 14px;
+            border-radius: 22px;
+            background: #ffffff;
+            border: 1px solid rgba(17, 24, 39, 0.07);
+            box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .task-card:hover {
+            color: inherit;
+        }
+
+        .task-card--done {
+            background: #f0fdf4;
+            border-color: rgba(34, 197, 94, 0.18);
+        }
+
+        .task-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            background: rgba(69, 82, 208, 0.10);
+            color: #4552d0;
+        }
+
+        .task-card--done .task-card-icon {
+            background: rgba(34, 197, 94, 0.14);
+            color: #166534;
+        }
+
+        .task-card-copy {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .task-card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 4px;
+            line-height: 1.35;
+        }
+
+        .task-card--done .task-card-title {
+            color: #166534;
+        }
+
+        .task-card-lead {
+            font-size: 0.88rem;
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .task-card--done .task-card-lead {
+            color: #166534;
+        }
+
+        .task-card-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            background: rgba(69, 82, 208, 0.10);
+            color: #4552d0;
+        }
+
+        .task-card--done .task-card-status {
+            background: rgba(34, 197, 94, 0.14);
+            color: #166534;
+        }
+
+        .task-card-chevron {
+            position: absolute;
+            top: 50%;
+            right: 14px;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 1rem;
+        }
+
         .menu-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -586,6 +683,23 @@
                     </p>
                 </div>
             </div>
+        </a>
+
+        <a href="{{ route('app.system_overview') }}" class="task-card mb-3 {{ !empty($overviewTaskCompleted) ? 'task-card--done' : '' }}">
+            <div class="task-card-icon">
+                <i class="fa-solid fa-video"></i>
+            </div>
+            <div class="task-card-copy">
+                <p class="task-card-title">แนะนำภาพรวมของระบบต้นแบบและฟังก์ชัน</p>
+                <p class="task-card-lead">ดูวิดีโอแนะนำก่อนเริ่มทดลองใช้งานระบบต้นแบบ</p>
+                @if (!empty($overviewTaskCompleted))
+                    <span class="task-card-status">
+                        <i class="fa-solid fa-circle-check"></i>
+                        ทำแล้ว
+                    </span>
+                @endif
+            </div>
+            <i class="fa-solid fa-chevron-right task-card-chevron"></i>
         </a>
 
         <div class="menu-grid mb-3">
