@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -76,6 +77,52 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('user.index')->with('success', 'เพิ่มข้อมูลผู้ใช้งานเรียบร้อยแล้ว');
+    }
+
+    public function participant_register(Request $request)
+    {
+        $validated = $request->validate(
+            [
+                'name' => ['required', 'string', 'max:255'],
+                'username' => ['required', 'string', 'max:30', 'alpha_dash', Rule::unique('users', 'username')],
+                'compensation_channel' => ['required', 'string', 'max:255'],
+                'password' => ['required', 'string', 'min:5', 'max:255', 'confirmed'],
+                'password_confirmation' => ['required', 'string', 'min:5', 'max:255'],
+            ],
+            [
+                'name.required' => 'กรุณากรอกนามสมมุติ',
+                'username.required' => 'กรุณากรอกชื่อผู้ใช้งาน',
+                'username.max' => 'ชื่อผู้ใช้งานต้องไม่เกิน 30 ตัวอักษร',
+                'username.alpha_dash' => 'ชื่อผู้ใช้งานใช้ได้เฉพาะตัวอักษรอังกฤษ ตัวเลข ขีดกลาง และขีดล่าง',
+                'username.unique' => 'มีชื่อผู้ใช้งานนี้ในระบบแล้ว',
+                'compensation_channel.required' => 'กรุณากรอกช่องทางการจ่ายค่าตอบแทน',
+                'compensation_channel.string' => 'ช่องทางการจ่ายค่าตอบแทนต้องเป็นข้อความ',
+                'compensation_channel.max' => 'ช่องทางการจ่ายค่าตอบแทนต้องไม่เกิน 255 ตัวอักษร',
+                'password.required' => 'กรุณากรอกรหัสผ่าน',
+                'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 5 ตัวอักษร',
+                'password.confirmed' => 'รหัสผ่านไม่ตรงกัน',
+                'password_confirmation.required' => 'กรุณากรอกยืนยันรหัสผ่าน',
+            ]
+        );
+
+        $placeholderEmail = sprintf('participant-%s@tu-skinsafe.local', Str::uuid()->toString());
+
+        $user = User::create([
+            'name' => trim($validated['name']),
+            'username' => strtolower(trim($validated['username'])),
+            'email' => $placeholderEmail,
+            'compensation_channel' => $validated['compensation_channel'],
+            'role' => 'research_participant',
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json([
+            'message' => 'สมัครเข้าร่วมวิจัยสำเร็จ สามารถเข้าสู่ระบบเพื่อทำแบบทดสอบได้เลย',
+            'user' => [
+                'name' => $user->name,
+                'username' => $user->username,
+            ],
+        ], 201);
     }
 
     public function edit(Request $request, $id)

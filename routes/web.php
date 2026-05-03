@@ -11,6 +11,7 @@ Auth::routes();
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/questionnaire', [QuestionnaireController::class, 'index'])->name('questionnaire.index');
 Route::post('/questionnaire', [QuestionnaireController::class, 'store'])->name('questionnaire.store');
+Route::post('/participant/register', [UserController::class, 'participant_register'])->name('participant.register');
 
 Route::middleware(['auth'])->group(function () {
     Route::prefix('questionnaire')->group(function () {

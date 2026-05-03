@@ -79,14 +79,6 @@
                                     <div class="text-center mb-2">
                                         <img class="pe-none" src="{{ asset('assets/images/logo/logo_horizontal.png') }}" height="80" loading="lazy">
                                     </div>
-
-                                    <div class="d-grid gap-2 mb-3">
-                                        <a href="{{ route('questionnaire.index') }}" class="btn btn-success btn-lg py-3 fw-bold">
-                                            <i class="fa-solid fa-clipboard-list me-2"></i>
-                                            ทำแบบสอบถาม
-                                        </a>
-                                    </div>
-
                                     <h2 class="mb-2 text-center">เข้าสู่ระบบ</h2>
 
                                     <form id="form_login" action="{{ route('login') }}" method="post">
@@ -139,6 +131,15 @@
                                             </button>
                                         </div>
                                     </form>
+
+                                    <div class="border-top mt-4 pt-4">
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-lg py-3 fw-bold" data-bs-toggle="modal" data-bs-target="#participantRegisterModal">
+                                                <i class="fa-solid fa-user-plus me-2"></i>
+                                                สมัครเข้าร่วมวิจัย
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -150,6 +151,111 @@
                 </div>
             </div>
         </section>
+    </div>
+
+    <div class="modal fade" id="participantRegisterModal" tabindex="-1" aria-labelledby="participantRegisterModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title mb-1" id="participantRegisterModalLabel">สมัครเข้าร่วมวิจัย</h5>
+                        <small class="text-muted">ข้อมูลชุดนี้ใช้เฉพาะการสร้างบัญชีสำหรับเข้าสู่ระบบเท่านั้น</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form id="form_participant_register" action="{{ route('participant.register') }}" method="post" novalidate>
+                    @csrf
+                    <div class="modal-body">
+                        <div class="alert alert-warning mb-3">
+                            กรุณาอ่านคำชี้แจงในการเข้าร่วมวิจัยก่อน จึงจะสามารถกรอกข้อมูลและบันทึกการสมัครได้
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3 p-3 rounded-3 bg-light">
+                            <div>
+                                <div class="fw-semibold text-dark">คำชี้แจงในการเข้าร่วมวิจัย</div>
+                                <small class="text-muted">กดดูรายละเอียดก่อนสมัครเข้าร่วม</small>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="participantResearchNoteTrigger">
+                                <i class="fa-solid fa-circle-info me-1"></i>
+                                อ่านคำชี้แจง
+                            </button>
+                        </div>
+
+                        <div class="row g-3" id="participantRegisterFields">
+                            <div class="col-12 col-md-6">
+                                <label for="participant_name" class="form-label">นามสมมุติ <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="participant_name" name="name" maxlength="255" autocomplete="off" required>
+                            </div>
+
+
+
+                            <div class="col-12">
+                                <label for="participant_compensation_channel" class="form-label">ช่องทางและรายละเอียดการจ่ายค่าตอบแทน <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="participant_compensation_channel" name="compensation_channel" maxlength="255" autocomplete="off" placeholder="เช่น โอนเงินผ่านบัญชีธนาคาร / พร้อมเพย์ / เงินสด" required>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label for="participant_username" class="form-label">ชื่อผู้ใช้งาน <span class="text-danger">*</span> <small class="text-muted">ใช้เข้าสู่ระบบ</small></label>
+                                <input type="text" class="form-control" id="participant_username" name="username" maxlength="30" autocomplete="off" required>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="participant_password" class="form-label">รหัสผ่าน <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="participant_password" name="password" maxlength="255" autocomplete="new-password" required>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label for="participant_password_confirmation" class="form-label">ยืนยันรหัสผ่าน <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="participant_password_confirmation" name="password_confirmation" maxlength="255" autocomplete="new-password" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="submit" id="participantRegisterSubmit" class="btn btn-primary">
+                            <i class="fa-solid fa-floppy-disk me-1"></i>
+                            สมัครเข้าร่วมวิจัย
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="participantResearchNoteModal" tabindex="-1" aria-labelledby="participantResearchNoteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title mb-0" id="participantResearchNoteModalLabel">คำชี้แจงในการเข้าร่วมวิจัย</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <p class="mb-3" style="text-indent: 1.5em;">
+                            งานวิจัยเรื่อง <span class="fw-semibold">กรอบพัฒนาระบบจัดเก็บและแลกเปลี่ยน
+                                ข้อมูลภาพถ่ายโรคผิวหนังเพื่อสนับสนุนการแพทย์ทางไกล
+                            </span> มีวัตถุประสงค์เพื่อ
+                            <span class="fw-semibold">พัฒนาระบบต้นแบบสำหรับจัดเก็บและส่งต่อภาพถ่ายโรคผิวหนัง</span>
+                            โดยการเก็บข้อมูลจากผู้เข้าร่วมวิจัยเพื่อใช้ในการออกแบบและประเมินระบบต้นแบบให้เหมาะสมกับการใช้งานจริง
+                        </p>
+                        <p class="mb-3" style="text-indent: 1.5em;">
+                            การเข้าร่วมวิจัยนี้เป็นไปโดยความสมัครใจ ผู้เข้าร่วมสามารถถอนตัวได้ทุกเมื่อโดยไม่กระทบสิทธิของท่าน
+                        </p>
+                        <p class="mb-3" style="text-indent: 1.5em;">
+                            หากท่านทดสอบการใช้งานและประเมินผลสำเร็จ จะมีค่าตอบแทนตามที่โครงการกำหนด
+                            <span class="fw-semibold">จำนวนเงิน 300 บาท</span>
+                        </p>
+                        <p class="mb-0" style="text-indent: 1.5em;">
+                            ข้อมูลที่เก็บจะใช้เพื่อการวิจัยเท่านั้น และจะดำเนินการตามแนวทางการคุ้มครองข้อมูลส่วนบุคคลและจริยธรรมการวิจัยที่เกี่ยวข้อง
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="participantResearchNoteAcknowledge">รับทราบ</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Library Bundle Script -->
@@ -165,6 +271,34 @@
 
     <script>
         $(document).ready(function() {
+            const participantModalElement = document.getElementById('participantRegisterModal');
+            const participantModal = participantModalElement ? bootstrap.Modal.getOrCreateInstance(participantModalElement) : null;
+            const researchNoteModalElement = document.getElementById('participantResearchNoteModal');
+            const researchNoteModal = researchNoteModalElement ? bootstrap.Modal.getOrCreateInstance(researchNoteModalElement, {
+                backdrop: 'static',
+                keyboard: false
+            }) : null;
+            const participantRegisterFields = $('#participantRegisterFields');
+            let researchNoteAccepted = false;
+
+            const lockParticipantForm = function() {
+                participantRegisterFields.find('input, select, textarea').prop('disabled', true);
+                $('#participantRegisterSubmit').prop('disabled', true);
+            };
+
+            const unlockParticipantForm = function() {
+                participantRegisterFields.find('input, select, textarea').prop('disabled', false);
+                $('#participantRegisterSubmit').prop('disabled', false);
+            };
+
+            const refreshParticipantFormState = function() {
+                if (researchNoteAccepted) {
+                    unlockParticipantForm();
+                } else {
+                    lockParticipantForm();
+                }
+            };
+
             $('script').each(function() {
                 $(this).attr('defer', '');
             });
@@ -172,11 +306,7 @@
             $('img').each(function() {
                 $(this).attr('loading', 'lazy');
             });
-        });
-    </script>
 
-    <script>
-        $(document).ready(function() {
             $("#form_login").on("submit", function(e) {
                 e.preventDefault();
 
@@ -202,6 +332,147 @@
                             requestAnimationFrame(() => {
                                 e.target.submit();
                             });
+                        });
+                    }
+                });
+            });
+
+            $('#participantResearchNoteTrigger').on('click', function() {
+                if (researchNoteModal) {
+                    researchNoteModal.show();
+                }
+            });
+
+            $('#participantResearchNoteAcknowledge').on('click', function() {
+                researchNoteAccepted = true;
+                refreshParticipantFormState();
+
+                if (researchNoteModal) {
+                    researchNoteModal.hide();
+                }
+
+                $('#participant_name').trigger('focus');
+            });
+
+            $('#participantRegisterModal').on('shown.bs.modal', function() {
+                researchNoteAccepted = false;
+                refreshParticipantFormState();
+
+                if (researchNoteModal) {
+                    researchNoteModal.show();
+                }
+            });
+
+            $('#participantRegisterModal').on('hidden.bs.modal', function() {
+                $('#form_participant_register')[0].reset();
+                researchNoteAccepted = false;
+                refreshParticipantFormState();
+                $('#participantRegisterSubmit').html('<i class="fa-solid fa-floppy-disk me-1"></i> สมัครเข้าร่วมวิจัย');
+            });
+
+            $('#participantResearchNoteModal').on('hidden.bs.modal', function() {
+                if (!researchNoteAccepted) {
+                    refreshParticipantFormState();
+                }
+            });
+
+            refreshParticipantFormState();
+
+            $("#form_participant_register").on("submit", function(e) {
+                e.preventDefault();
+
+                const $form = $(this);
+                const submitButton = $('#participantRegisterSubmit');
+                const originalButtonHtml = submitButton.html();
+                const formData = new FormData(this);
+                const escapeHtml = function(text) {
+                    return $('<div>').text(text).html();
+                };
+
+                if (!researchNoteAccepted) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'กรุณาอ่านคำชี้แจงก่อน',
+                        text: 'ต้องกดรับทราบคำชี้แจงก่อนจึงจะกรอกและบันทึกข้อมูลได้',
+                        confirmButtonText: 'ปิด'
+                    });
+
+                    return;
+                }
+
+                submitButton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> กำลังสมัคร');
+
+                Swal.fire({
+                    title: `<h2 class="mb-0 text-dark">กำลังสมัครเข้าร่วมวิจัย</h2>`,
+                    html: `<div class="d-flex flex-column align-items-center">
+                                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <div class="mb-1">โปรดรอสักครู่...</div>
+                            </div>`,
+                    showConfirmButton: false,
+                    showCloseButton: false,
+                    showCancelButton: false,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                });
+
+                $.ajax({
+                    url: $form.attr('action'),
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(response) {
+                        Swal.close();
+
+                        if (participantModal) {
+                            participantModal.hide();
+                        }
+
+                        $('#username').val(response?.user?.username || $('#participant_username').val());
+                        $('#password').val('').trigger('focus');
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'สมัครสำเร็จ',
+                            html: escapeHtml(response?.message || 'สมัครเข้าร่วมวิจัยสำเร็จ สามารถเข้าสู่ระบบเพื่อทำแบบทดสอบได้เลย'),
+                            confirmButtonText: 'เข้าใจแล้ว'
+                        });
+                    },
+                    error: function(xhr) {
+                        Swal.close();
+
+                        submitButton.prop('disabled', false).html(originalButtonHtml);
+
+                        let message = 'เกิดข้อผิดพลาดในการสมัคร';
+                        const response = xhr.responseJSON || {};
+
+                        if (response.errors) {
+                            const messages = [];
+
+                            Object.values(response.errors).forEach(function(errorList) {
+                                errorList.forEach(function(errorMessage) {
+                                    messages.push(errorMessage);
+                                });
+                            });
+
+                            message = messages.map(function(item) {
+                                return escapeHtml(item);
+                            }).join('<br>');
+                        } else if (response.message) {
+                            message = escapeHtml(response.message);
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'สมัครไม่สำเร็จ',
+                            html: `<div class="text-start">${message}</div>`,
+                            confirmButtonText: 'ปิด'
                         });
                     }
                 });
