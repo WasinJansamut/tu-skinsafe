@@ -12,11 +12,11 @@ class MobileMenuController extends Controller
     public function upload()
     {
         return $this->page([
-            'page_title' => 'ถ่าย-อัปโหลดภาพ',
+            'page_title' => 'ถ่าย/อัปโหลดภาพ',
             'page_icon' => 'fa-cloud-arrow-up',
-            'page_subtitle' => 'อัปโหลดภาพถ่ายผิวหนังเข้าสู่ระบบต้นแบบ',
-            'hero_title' => 'ถ่าย-อัปโหลดภาพ',
-            'hero_text' => 'เตรียมภาพถ่ายเพื่อส่งเข้า workflow การจัดเก็บและส่งต่อข้อมูล',
+            'page_subtitle' => 'ถ่ายภาพหรืออัปโหลดภาพถ่ายผิวหนังเข้าสู่ระบบต้นแบบ',
+            'hero_title' => 'ถ่าย/อัปโหลดภาพ',
+            'hero_text' => 'ถ่ายหรืออัปโหลดภาพเพื่อส่งเข้า workflow การจัดเก็บและส่งต่อข้อมูล',
             'primary_label' => 'เลือกไฟล์ภาพ',
             'items' => [
                 ['title' => 'รองรับภาพจากโทรศัพท์', 'meta' => 'JPG, PNG, HEIC'],

@@ -360,7 +360,7 @@
             </a>
             <a href="{{ route('app.upload') }}" class="bottom-nav-item {{ request()->routeIs('app.upload') ? 'is-active' : '' }}">
                 <span class="bottom-nav-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
-                <span>อัปโหลด</span>
+                <span>ถ่าย-อัปภาพ</span>
             </a>
             <a href="{{ route('app.library') }}" class="bottom-nav-item {{ request()->routeIs('app.library') ? 'is-active' : '' }}">
                 <span class="bottom-nav-icon"><i class="fa-regular fa-folder-open"></i></span>

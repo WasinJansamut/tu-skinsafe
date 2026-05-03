@@ -27,6 +27,31 @@
     </div>
 
     <div class="col-md-6 col-lg-4 form-group">
+        <label for="compensation_channel">ช่องทางการชำระ / รับค่าตอบแทน</label>
+        <input type="text" name="compensation_channel" id="compensation_channel"
+            class="form-control @error('compensation_channel') is-invalid @enderror"
+            value="{{ old('compensation_channel', $user->compensation_channel ?? '') }}" autocomplete="off" maxlength="255"
+            placeholder="เช่น พร้อมเพย์, บัญชีธนาคาร, ไม่รับค่าตอบแทน">
+        @error('compensation_channel')
+            <span class="text-danger">{{ $message }}</span>
+        @enderror
+    </div>
+
+    <div class="col-md-6 col-lg-4 form-group">
+        <label for="status_payto_research_participant">สถานะการชำระเงิน</label>
+        <select name="status_payto_research_participant" id="status_payto_research_participant"
+            class="form-select @error('status_payto_research_participant') is-invalid @enderror">
+            <option value="">กรุณาเลือก</option>
+            <option value="รอชำระค่าตอบแทน" {{ old('status_payto_research_participant', $user->status_payto_research_participant ?? '') === 'รอชำระค่าตอบแทน' ? 'selected' : '' }}>รอชำระค่าตอบแทน</option>
+            <option value="ชำระแล้ว" {{ old('status_payto_research_participant', $user->status_payto_research_participant ?? '') === 'ชำระแล้ว' ? 'selected' : '' }}>ชำระแล้ว</option>
+            <option value="ไม่ขอรับค่าตอบแทน" {{ old('status_payto_research_participant', $user->status_payto_research_participant ?? '') === 'ไม่ขอรับค่าตอบแทน' ? 'selected' : '' }}>ไม่ขอรับค่าตอบแทน</option>
+        </select>
+        @error('status_payto_research_participant')
+            <span class="text-danger">{{ $message }}</span>
+        @enderror
+    </div>
+
+    <div class="col-md-6 col-lg-4 form-group">
         <label for="role">ประเภทผู้ใช้งาน <span class="text-danger">*</span></label>
         <select name="role" id="role" class="form-select @error('role') is-invalid @enderror" required>
             <option value="">กรุณาเลือก</option>

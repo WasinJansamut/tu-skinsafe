@@ -34,14 +34,30 @@
                                 <thead>
                                     <tr>
                                         <th>Action</th>
-                                        <th>ชื่อ-นามสกุล</th>
+                                        <th>นามสมมุติ</th>
                                         <th>ชื่อผู้ใช้งาน</th>
-                                        <th>อีเมล</th>
+                                        <th>ช่องทางการโอนเงิน</th>
+                                        <th>สถานะการโอน</th>
                                         <th>ประเภทผู้ใช้งาน</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($users as $user)
+                                        @php
+                                            $transferStatus = trim((string) ($user->status_payto_research_participant ?? ''));
+                                            $paymentChannel = trim((string) ($user->compensation_channel ?? ''));
+
+                                            if ($paymentChannel === 'ไม่รับค่าตอบแทน' || $transferStatus === 'ไม่ขอรับค่าตอบแทน') {
+                                                $paymentBadgeClass = 'bg-success';
+                                                $paymentBadgeLabel = 'ไม่ขอรับค่าตอบแทน';
+                                            } elseif ($transferStatus === 'ชำระแล้ว') {
+                                                $paymentBadgeClass = 'bg-success';
+                                                $paymentBadgeLabel = 'ชำระแล้ว';
+                                            } else {
+                                                $paymentBadgeClass = 'bg-danger';
+                                                $paymentBadgeLabel = $transferStatus !== '' ? $transferStatus : 'ยังไม่ชำระ';
+                                            }
+                                        @endphp
                                         <tr class="text-center">
                                             <td>
                                                 <form action="{{ route('user.soft_delete', $user->id) }}" method="post">
@@ -65,8 +81,13 @@
                                             <td>
                                                 {{ $user->username ?? '' }}
                                             </td>
+                                            <td class="text-start">
+                                                {{ $paymentChannel !== '' ? $paymentChannel : '-' }}
+                                            </td>
                                             <td>
-                                                {{ $user->email ?? '' }}
+                                                <span class="badge {{ $paymentBadgeClass }}">
+                                                    {{ $paymentBadgeLabel }}
+                                                </span>
                                             </td>
                                             <td>
                                                 <span class="badge {{ $user->role === 'admin' ? 'bg-danger' : 'bg-success' }}">

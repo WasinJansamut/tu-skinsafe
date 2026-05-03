@@ -47,6 +47,8 @@ class UserController extends Controller
                 'name' => ['required', 'string', 'max:255'],
                 'username' => ['required', 'string', 'max:30', 'alpha_dash', Rule::unique('users', 'username')],
                 'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+                'compensation_channel' => ['nullable', 'string', 'max:255'],
+                'status_payto_research_participant' => ['nullable', 'string', 'max:50'],
                 'role' => ['required', Rule::in(['admin', 'research_participant'])],
                 'password' => ['required', 'string', 'min:5', 'max:255', 'confirmed'],
                 'password_confirmation' => ['required', 'string', 'min:5', 'max:255'],
@@ -60,6 +62,10 @@ class UserController extends Controller
                 'email.required' => 'กรุณากรอกอีเมล',
                 'email.email' => 'รูปแบบอีเมลไม่ถูกต้อง',
                 'email.unique' => 'มีอีเมลนี้ในระบบแล้ว',
+                'compensation_channel.string' => 'ช่องทางการชำระ / รับค่าตอบแทนต้องเป็นข้อความ',
+                'compensation_channel.max' => 'ช่องทางการชำระ / รับค่าตอบแทนต้องไม่เกิน 255 ตัวอักษร',
+                'status_payto_research_participant.string' => 'สถานะการชำระเงินต้องเป็นข้อความ',
+                'status_payto_research_participant.max' => 'สถานะการชำระเงินต้องไม่เกิน 50 ตัวอักษร',
                 'role.required' => 'กรุณาเลือกประเภทผู้ใช้งาน',
                 'password.required' => 'กรุณากรอกรหัสผ่าน',
                 'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 5 ตัวอักษร',
@@ -72,6 +78,8 @@ class UserController extends Controller
             'name' => $validated['name'],
             'username' => strtolower($validated['username']),
             'email' => strtolower($validated['email']),
+            'compensation_channel' => $validated['compensation_channel'] ?? null,
+            'status_payto_research_participant' => $validated['status_payto_research_participant'] ?? null,
             'role' => $validated['role'],
             'password' => Hash::make($validated['password']),
         ]);
@@ -151,6 +159,8 @@ class UserController extends Controller
                 'name' => ['required', 'string', 'max:255'],
                 'username' => ['required', 'string', 'max:30', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)],
                 'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+                'compensation_channel' => ['nullable', 'string', 'max:255'],
+                'status_payto_research_participant' => ['nullable', 'string', 'max:50'],
                 'role' => ['required', Rule::in(['admin', 'research_participant'])],
                 'password' => ['nullable', 'string', 'min:5', 'max:255', 'confirmed'],
                 'password_confirmation' => ['nullable', 'string', 'min:5', 'max:255'],
@@ -164,6 +174,10 @@ class UserController extends Controller
                 'email.required' => 'กรุณากรอกอีเมล',
                 'email.email' => 'รูปแบบอีเมลไม่ถูกต้อง',
                 'email.unique' => 'มีอีเมลนี้ในระบบแล้ว',
+                'compensation_channel.string' => 'ช่องทางการชำระ / รับค่าตอบแทนต้องเป็นข้อความ',
+                'compensation_channel.max' => 'ช่องทางการชำระ / รับค่าตอบแทนต้องไม่เกิน 255 ตัวอักษร',
+                'status_payto_research_participant.string' => 'สถานะการชำระเงินต้องเป็นข้อความ',
+                'status_payto_research_participant.max' => 'สถานะการชำระเงินต้องไม่เกิน 50 ตัวอักษร',
                 'role.required' => 'กรุณาเลือกประเภทผู้ใช้งาน',
                 'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 5 ตัวอักษร',
                 'password.confirmed' => 'รหัสผ่านไม่ตรงกัน',
@@ -173,6 +187,8 @@ class UserController extends Controller
         $user->name = $validated['name'];
         $user->username = strtolower($validated['username']);
         $user->email = strtolower($validated['email']);
+        $user->compensation_channel = $validated['compensation_channel'] ?? null;
+        $user->status_payto_research_participant = $validated['status_payto_research_participant'] ?? null;
         $user->role = $validated['role'];
 
         if (! empty($validated['password'])) {

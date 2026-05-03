@@ -457,7 +457,7 @@
     @php
         $quickMenus = [
             [
-                'title' => 'อัปโหลดภาพ',
+                'title' => 'ถ่าย/อัปโหลดภาพ',
                 'icon' => 'fa-cloud-arrow-up',
                 'color' => '#4459dd',
                 'bg' => 'rgba(69, 89, 221, 0.10)',
@@ -671,7 +671,7 @@
             </a>
             <a href="{{ route('app.upload') }}" class="bottom-nav-item">
                 <span class="bottom-nav-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
-                <span>อัปโหลด</span>
+                <span>ถ่าย-อัปภาพ</span>
             </a>
             <a href="{{ route('app.library') }}" class="bottom-nav-item">
                 <span class="bottom-nav-icon"><i class="fa-regular fa-folder-open"></i></span>
