@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MobileMenuController;
 use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\UserController;
 
@@ -14,6 +15,17 @@ Route::post('/questionnaire', [QuestionnaireController::class, 'store'])->name('
 Route::post('/participant/register', [UserController::class, 'participant_register'])->name('participant.register');
 
 Route::middleware(['auth'])->group(function () {
+    Route::prefix('app')->name('app.')->group(function () {
+        Route::get('/upload', [MobileMenuController::class, 'upload'])->name('upload');
+        Route::get('/library', [MobileMenuController::class, 'library'])->name('library');
+        Route::get('/consent', [MobileMenuController::class, 'consent'])->name('consent');
+        Route::get('/access', [MobileMenuController::class, 'access'])->name('access');
+        Route::get('/history', [MobileMenuController::class, 'history'])->name('history');
+        Route::get('/about', [MobileMenuController::class, 'about'])->name('about');
+        Route::get('/notifications', [MobileMenuController::class, 'notifications'])->name('notifications');
+        Route::get('/shares', [MobileMenuController::class, 'shares'])->name('shares');
+    });
+
     Route::prefix('questionnaire')->group(function () {
         Route::get('/responses', [QuestionnaireController::class, 'responses'])->name('questionnaire.responses');
         Route::get('/responses/{id}', [QuestionnaireController::class, 'showResponse'])->name('questionnaire.responses.show');
