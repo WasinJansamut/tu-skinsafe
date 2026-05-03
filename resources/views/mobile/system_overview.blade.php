@@ -197,6 +197,10 @@
             line-height: 1.1;
         }
 
+        .bottom-nav-item i {
+            font-size: 1.15rem;
+        }
+
         .bottom-nav-item.is-active {
             color: #4552d0;
         }
@@ -271,28 +275,5 @@
         </div>
     </div>
 
-    <nav class="bottom-nav" aria-label="เมนูด้านล่าง">
-        <div class="bottom-nav-inner">
-            <a href="{{ route('home') }}" class="bottom-nav-item {{ request()->routeIs('home') ? 'is-active' : '' }}">
-                <span class="bottom-nav-icon"><i class="fa-solid fa-house"></i></span>
-                <span>หน้าหลัก</span>
-            </a>
-            <a href="{{ route('app.upload') }}" class="bottom-nav-item {{ request()->routeIs('app.upload') ? 'is-active' : '' }}">
-                <span class="bottom-nav-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
-                <span>ถ่าย/อัปโหลดภาพ</span>
-            </a>
-            <a href="{{ route('app.library') }}" class="bottom-nav-item {{ request()->routeIs('app.library') ? 'is-active' : '' }}">
-                <span class="bottom-nav-icon"><i class="fa-regular fa-folder-open"></i></span>
-                <span>คลังภาพ</span>
-            </a>
-            <a href="{{ route('app.consent') }}" class="bottom-nav-item {{ request()->routeIs('app.consent') ? 'is-active' : '' }}">
-                <span class="bottom-nav-icon"><i class="fa-solid fa-users"></i></span>
-                <span>การแชร์</span>
-            </a>
-            <a href="{{ route('app.history') }}" class="bottom-nav-item {{ request()->routeIs('app.history') ? 'is-active' : '' }}">
-                <span class="bottom-nav-icon"><i class="fa-regular fa-clock"></i></span>
-                <span>ประวัติ</span>
-            </a>
-        </div>
-    </nav>
+    @include('layouts.mobile-nav')
 @endsection

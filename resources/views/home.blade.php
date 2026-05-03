@@ -777,28 +777,5 @@
         <div class="page-spacer"></div>
     </div>
 
-    <nav class="bottom-nav" aria-label="เมนูด้านล่าง">
-        <div class="bottom-nav-inner">
-            <a href="{{ route('home') }}" class="bottom-nav-item is-active">
-                <span class="bottom-nav-icon"><i class="fa-solid fa-house"></i></span>
-                <span>หน้าหลัก</span>
-            </a>
-            <a href="{{ route('app.upload') }}" class="bottom-nav-item">
-                <span class="bottom-nav-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
-                <span>ถ่าย-อัปภาพ</span>
-            </a>
-            <a href="{{ route('app.library') }}" class="bottom-nav-item">
-                <span class="bottom-nav-icon"><i class="fa-regular fa-folder-open"></i></span>
-                <span>คลังภาพ</span>
-            </a>
-            <a href="{{ route('app.consent') }}" class="bottom-nav-item">
-                <span class="bottom-nav-icon"><i class="fa-solid fa-users"></i></span>
-                <span>การแชร์</span>
-            </a>
-            <a href="{{ route('app.history') }}" class="bottom-nav-item">
-                <span class="bottom-nav-icon"><i class="fa-regular fa-clock"></i></span>
-                <span>ประวัติ</span>
-            </a>
-        </div>
-    </nav>
+    @include('layouts.mobile-nav')
 @endsection
