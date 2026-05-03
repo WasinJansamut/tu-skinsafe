@@ -22,6 +22,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/access', [MobileMenuController::class, 'access'])->name('access');
         Route::get('/history', [MobileMenuController::class, 'history'])->name('history');
         Route::get('/about', [MobileMenuController::class, 'about'])->name('about');
+        Route::get('/status', [MobileMenuController::class, 'status'])->name('status');
         Route::get('/notifications', [MobileMenuController::class, 'notifications'])->name('notifications');
         Route::get('/shares', [MobileMenuController::class, 'shares'])->name('shares');
     });

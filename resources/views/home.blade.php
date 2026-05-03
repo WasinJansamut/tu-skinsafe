@@ -120,17 +120,33 @@
         }
 
         .profile-card {
+            position: relative;
             border-radius: 22px;
             background: #ffffff;
             border: 1px solid rgba(17, 24, 39, 0.07);
             box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
-            padding: 14px 14px 12px;
+            padding: 12px 46px 12px 14px;
+        }
+
+        .profile-card--link {
+            display: block;
+            color: inherit;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+
+        .profile-card--link:hover {
+            color: inherit;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 26px rgba(17, 24, 39, 0.06);
+            border-color: rgba(69, 82, 208, 0.18);
         }
 
         .profile-card-header {
             display: flex;
             align-items: center;
             gap: 12px;
+            margin-bottom: 0;
         }
 
         .profile-avatar {
@@ -174,33 +190,23 @@
             word-break: break-word;
         }
 
-        .profile-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+        .profile-summary-icon {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 48px;
+            height: 48px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #4552d0;
+            flex: 0 0 auto;
+            background: rgba(69, 82, 208, 0.10);
         }
 
-        .profile-stat {
-            padding: 10px 12px;
-            border-radius: 16px;
-            background: #f8faff;
-            border: 1px solid rgba(76, 89, 255, 0.08);
-        }
-
-        .profile-stat-title {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: #6b7280;
-            margin: 0 0 4px;
-        }
-
-        .profile-stat-value {
+        .profile-summary-icon i {
             font-size: 0.95rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin: 0;
-            line-height: 1.35;
-            word-break: break-word;
         }
 
         .menu-grid {
@@ -565,7 +571,10 @@
             $currentUser = auth()->user();
         @endphp
 
-        <div class="profile-card mb-3">
+        <a href="{{ route('app.status') }}" class="profile-card profile-card--link mb-3">
+            <span class="profile-summary-icon" aria-hidden="true">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
             <div class="profile-card-header">
                 <div class="profile-avatar">
                     <i class="fa-solid fa-user"></i>
@@ -577,7 +586,7 @@
                     </p>
                 </div>
             </div>
-        </div>
+        </a>
 
         <div class="menu-grid mb-3">
             @foreach ($quickMenus as $menu)

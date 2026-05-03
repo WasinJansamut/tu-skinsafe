@@ -111,6 +111,14 @@ class MobileMenuController extends Controller
         ]);
     }
 
+    public function status()
+    {
+        return view('mobile.status', [
+            'page_title' => 'ข้อมูลสถานะผู้เข้าร่วม',
+            'current_user' => auth()->user(),
+        ]);
+    }
+
     public function notifications()
     {
         return $this->page([
