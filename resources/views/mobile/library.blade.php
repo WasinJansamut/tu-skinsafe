@@ -444,7 +444,7 @@
         <div class="page-card">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <div class="section-title mb-0">รายการที่บันทึกแล้ว</div>
-                <a href="{{ route('app.upload') }}" class="section-link text-decoration-none" style="font-size: .92rem; color:#4169e1; font-weight:600;">ถ่าย/อัปโหลดภาพ</a>
+                {{-- <a href="{{ route('app.upload') }}" class="section-link text-decoration-none" style="font-size: .92rem; color:#4169e1; font-weight:600;">ถ่าย/อัปโหลดภาพ</a> --}}
             </div>
 
             @if ($records->isEmpty())
