@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('page_title', 'ดูข้อมูลแบบสอบถาม')
+@section('page_title', 'ดูข้อมูลแบบสอบถามยืนยันความต้องการ')
 @section('content')
     <div class="conatiner-fluid content-inner">
         @php
@@ -32,14 +32,14 @@
                                     <a href="{{ route('home') }}">หน้าหลัก</a>
                                 </li>
                                 <li class="breadcrumb-item">
-                                    <a href="{{ route('questionnaire.responses') }}">ข้อมูลแบบสอบถาม</a>
+                                    <a href="{{ route('questionnaire.responses') }}">ข้อมูลแบบสอบถามยืนยันความต้องการ</a>
                                 </li>
                                 <li class="breadcrumb-item active" aria-current="page">Record #{{ $response->id }}</li>
                             </ol>
                         </nav>
                     </div>
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h3 class="mb-0">รายละเอียดแบบสอบถาม #{{ $response->id }}</h3>
+                        <h3 class="mb-0">รายละเอียดแบบสอบถามยืนยันความต้องการ #{{ $response->id }}</h3>
                         <a href="{{ route('questionnaire.responses') }}" class="btn btn-dark">
                             <i class="fa-solid fa-arrow-left me-1"></i>
                             กลับไปรายการ

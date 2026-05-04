@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('page_title', 'ข้อมูลแบบสอบถาม')
+@section('page_title', 'ข้อมูลแบบสอบถามยืนยันความต้องการ')
 @section('content')
     <div class="conatiner-fluid content-inner">
         @include('layouts.alert')
@@ -13,7 +13,7 @@
                                     <a href="{{ route('home') }}">หน้าหลัก</a>
                                 </li>
                                 <li class="breadcrumb-item">
-                                    แบบสอบถามยืนยันความต้องการผู้ใช้
+                                    แบบสอบถามยืนยันความต้องการ
                                 </li>
                                 <li class="breadcrumb-item active" aria-current="page">ข้อมูลแบบสอบถาม</li>
                             </ol>
@@ -22,10 +22,10 @@
                     <div class="card-header">
                         <div class="mb-2">
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
-                                แบบสอบถามยืนยันความต้องการผู้ใช้
+                                แบบสอบถามยืนยันความต้องการ
                             </span>
                         </div>
-                        <h3 class="mb-0">ข้อมูลแบบสอบถาม</h3>
+                        <h3 class="mb-0">ข้อมูลแบบสอบถามยืนยันความต้องการ</h3>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -77,7 +77,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center text-muted">ยังไม่มีข้อมูลแบบสอบถาม</td>
+                                            <td colspan="8" class="text-center text-muted">ยังไม่มีข้อมูลแบบสอบถามยืนยันความต้องการ</td>
                                         </tr>
                                     @endforelse
                                 </tbody>

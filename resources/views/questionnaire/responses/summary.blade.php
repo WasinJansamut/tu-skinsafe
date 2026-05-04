@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('page_title', 'ผลรวมแบบสอบถาม')
+@section('page_title', 'ผลรวมแบบสอบถามยืนยันความต้องการ')
 @section('content')
     <div class="conatiner-fluid content-inner">
         <div class="row">
@@ -12,7 +12,7 @@
                                     <a href="{{ route('home') }}">หน้าหลัก</a>
                                 </li>
                                 <li class="breadcrumb-item">
-                                    แบบสอบถามยืนยันความต้องการผู้ใช้
+                                    แบบสอบถามยืนยันความต้องการ
                                 </li>
                                 <li class="breadcrumb-item active" aria-current="page">ผลรวมแบบสอบถาม</li>
                             </ol>
@@ -22,10 +22,10 @@
                         <div>
                             <div class="mb-2">
                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
-                                    แบบสอบถามยืนยันความต้องการผู้ใช้
+                                แบบสอบถามยืนยันความต้องการ
                                 </span>
                             </div>
-                            <h3 class="mb-0">ผลรวมแบบสอบถาม</h3>
+                            <h3 class="mb-0">ผลรวมแบบสอบถามยืนยันความต้องการ</h3>
                             <div class="text-muted">จำนวนผู้ตอบทั้งหมด {{ number_format($responsesCount) }} ราย</div>
                         </div>
                         <a href="{{ route('questionnaire.responses') }}" class="btn btn-outline-primary">

@@ -52,7 +52,7 @@
                                     <i class="fa-solid fa-clipboard-list fa-lg"></i>
                                 </div>
                                 <div>
-                                    <h5 class="mb-1 text-dark">แบบสอบถาม</h5>
+                                    <h5 class="mb-1 text-dark">แบบสอบถามยืนยันความต้องการ</h5>
                                     <div class="text-muted">ดูรายการคำตอบและรายละเอียดแต่ละรายการ</div>
                                 </div>
                             </div>
@@ -70,7 +70,7 @@
                                     <i class="fa-solid fa-chart-column fa-lg"></i>
                                 </div>
                                 <div>
-                                    <h5 class="mb-1 text-dark">สรุปแบบสอบถาม</h5>
+                                    <h5 class="mb-1 text-dark">ผลรวมแบบสอบถามยืนยันความต้องการ</h5>
                                     <div class="text-muted">ภาพรวมผลตอบแบบสอบถามและสถานะล่าสุด</div>
                                 </div>
                             </div>

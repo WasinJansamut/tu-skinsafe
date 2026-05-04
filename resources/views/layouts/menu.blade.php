@@ -59,24 +59,31 @@
                         </a>
                     </li>
 
+                    <li>
+                        <hr class="hr-horizontal">
+                    </li>
+
                     <li class="nav-item">
                         <a class="nav-link {{ Request::is('questionnaire/responses') || Request::is('questionnaire/responses/*') ? 'active' : '' }}"
                             href="{{ route('questionnaire.responses') }}">
-                            <i class="icon" data-bs-toggle="tooltip" title="แบบสอบถาม" data-bs-placement="right">
+                            <i class="icon" data-bs-toggle="tooltip" title="แบบสอบถามยืนยันความต้องการ" data-bs-placement="right">
                                 <i class="fa-solid fa-clipboard-list"></i>
                             </i>
-                            <span class="item-name">Questionnaire</span>
+                            <span class="item-name">แบบสอบถามยืนยันความต้องการ</span>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link {{ Request::is('questionnaire/summary') ? 'active' : '' }}"
                             href="{{ route('questionnaire.summary') }}">
-                            <i class="icon" data-bs-toggle="tooltip" title="ผลรวมแบบสอบถาม" data-bs-placement="right">
+                            <i class="icon" data-bs-toggle="tooltip" title="ผลรวมแบบสอบถามยืนยันความต้องการ" data-bs-placement="right">
                                 <i class="fa-solid fa-chart-column"></i>
                             </i>
-                            <span class="item-name">Questionnaire Summary</span>
+                            <span class="item-name">ผลรวมแบบสอบถามยืนยันความต้องการ</span>
                         </a>
+                    </li>
+                    <li>
+                        <hr class="hr-horizontal">
                     </li>
 
                     <li class="nav-item">
