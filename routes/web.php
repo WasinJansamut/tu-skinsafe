@@ -17,6 +17,7 @@ Route::post('/participant/register', [UserController::class, 'participant_regist
 Route::middleware(['auth'])->group(function () {
     Route::prefix('app')->name('app.')->group(function () {
         Route::get('/upload', [MobileMenuController::class, 'upload'])->name('upload');
+        Route::post('/upload', [MobileMenuController::class, 'storeUpload'])->name('upload.store');
         Route::get('/library', [MobileMenuController::class, 'library'])->name('library');
         Route::get('/consent', [MobileMenuController::class, 'consent'])->name('consent');
         Route::get('/access', [MobileMenuController::class, 'access'])->name('access');

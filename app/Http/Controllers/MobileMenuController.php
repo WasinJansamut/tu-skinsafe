@@ -4,10 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\UserTaskCompletion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class MobileMenuController extends Controller
 {
     private const SYSTEM_OVERVIEW_TASK_KEY = 'system_overview';
+    private const SKIN_IMAGE_UPLOAD_TASK_KEY = 'skin_image_upload';
 
     private function page(array $data)
     {
@@ -23,37 +27,84 @@ class MobileMenuController extends Controller
             ->exists();
     }
 
+    private function recordTaskCompletion(int $userId, string $taskKey): void
+    {
+        if (! Schema::hasTable('user_task_completions')) {
+            return;
+        }
+
+        UserTaskCompletion::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'task_key' => $taskKey,
+            ],
+            [
+                'completed_at' => now(),
+            ]
+        );
+    }
+
+    private function writeLog(?int $userId, string $actionKey, string $actionLabel, string $pagePath, array $details = []): void
+    {
+        if (! Schema::hasTable('system_logs')) {
+            return;
+        }
+
+        DB::table('system_logs')->insert([
+            'user_id' => $userId,
+            'action_key' => $actionKey,
+            'action_label' => $actionLabel,
+            'page_path' => $pagePath,
+            'details' => ! empty($details) ? json_encode($details, JSON_UNESCAPED_UNICODE) : null,
+            'created_at' => now(),
+        ]);
+    }
+
     public function upload()
     {
-        return $this->page([
+        $user = auth()->user();
+        $uploadCompleted = $this->isTaskCompleted($user->id, self::SKIN_IMAGE_UPLOAD_TASK_KEY);
+
+        $this->writeLog($user->id, 'view_upload_page', 'เปิดหน้าถ่าย/อัปโหลดภาพ', '/app/upload');
+
+        return view('mobile.upload', [
             'page_title' => 'ถ่าย/อัปโหลดภาพ',
-            'page_icon' => 'fa-cloud-arrow-up',
             'page_subtitle' => 'ถ่ายภาพหรืออัปโหลดภาพถ่ายผิวหนังเข้าสู่ระบบต้นแบบ',
-            'hero_title' => 'ถ่าย/อัปโหลดภาพ',
-            'hero_text' => 'ถ่ายหรืออัปโหลดภาพเพื่อส่งเข้า workflow การจัดเก็บและส่งต่อข้อมูล',
-            'primary_label' => 'เลือกไฟล์ภาพ',
-            'items' => [
-                ['title' => 'รองรับภาพจากโทรศัพท์', 'meta' => 'JPG, PNG, HEIC'],
-                ['title' => 'เลือกได้หลายภาพ', 'meta' => 'พร้อมใส่ข้อมูลกำกับภายหลัง'],
-                ['title' => 'ตรวจสอบก่อนส่ง', 'meta' => 'ยืนยันความถูกต้องก่อนบันทึก'],
-            ],
+            'upload_completed' => $uploadCompleted,
         ]);
     }
 
     public function library()
     {
-        return $this->page([
+        $user = auth()->user();
+        $records = collect();
+
+        if (Schema::hasTable('skin_image_records')) {
+            $records = DB::table('skin_image_records')
+                ->where('user_id', $user->id)
+                ->orderByDesc('id')
+                ->get()
+                ->map(function ($record) {
+                    $paths = json_decode($record->image_paths ?? '[]', true) ?: [];
+
+                    $record->thumbnail_url = ! empty($record->primary_image_path)
+                        ? Storage::url($record->primary_image_path)
+                        : (! empty($paths[0]) ? Storage::url($paths[0]) : null);
+                    $record->image_total = (int) ($record->image_count ?? count($paths));
+                    $record->created_at_text = ! empty($record->created_at)
+                        ? \Illuminate\Support\Carbon::parse($record->created_at)->format('d/m/Y H:i')
+                        : '-';
+                    $record->paths = $paths;
+
+                    return $record;
+                });
+        }
+
+        $this->writeLog($user->id, 'view_library_page', 'เปิดหน้าคลังภาพของฉัน', '/app/library');
+
+        return view('mobile.library', [
             'page_title' => 'คลังภาพของฉัน',
-            'page_icon' => 'fa-folder-open',
-            'page_subtitle' => 'ดูรายการภาพถ่ายและสถานะการจัดเก็บ',
-            'hero_title' => 'คลังภาพของฉัน',
-            'hero_text' => 'รายการภาพจะถูกจัดกลุ่มตามวันที่และสถานะการแชร์',
-            'primary_label' => 'ดูภาพทั้งหมด',
-            'items' => [
-                ['title' => 'ภาพล่าสุด', 'meta' => 'อัปโหลดเมื่อ 10 นาทีที่แล้ว'],
-                ['title' => 'ภาพที่รอตรวจสอบ', 'meta' => 'ยังไม่สมบูรณ์ 2 รายการ'],
-                ['title' => 'ภาพที่แชร์แล้ว', 'meta' => 'ส่งต่อให้แพทย์แล้ว 5 รายการ'],
-            ],
+            'records' => $records,
         ]);
     }
 
@@ -176,6 +227,8 @@ class MobileMenuController extends Controller
     {
         $user = auth()->user();
 
+        $this->writeLog($user->id, 'view_system_overview', 'เปิดหน้าแนะนำภาพรวมของระบบต้นแบบ', '/app/system-overview');
+
         return view('mobile.system_overview', [
             'page_title' => 'แนะนำภาพรวมของระบบต้นแบบ',
             'page_subtitle' => 'แนะนำภาพรวมของระบบต้นแบบและฟังก์ชันพื้นฐาน',
@@ -188,17 +241,72 @@ class MobileMenuController extends Controller
     {
         $user = $request->user();
 
-        UserTaskCompletion::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'task_key' => self::SYSTEM_OVERVIEW_TASK_KEY,
-            ],
-            [
-                'completed_at' => now(),
-            ]
-        );
+        $this->recordTaskCompletion($user->id, self::SYSTEM_OVERVIEW_TASK_KEY);
+        $this->writeLog($user->id, 'complete_system_overview', 'รับทราบและบันทึกขั้นแนะนำภาพรวมของระบบต้นแบบ', '/app/system-overview');
 
         return redirect()->route('home')->with('success', 'บันทึกการรับทราบขั้นแนะนำภาพรวมของระบบเรียบร้อยแล้ว');
+    }
+
+    public function storeUpload(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'capture_mode' => ['required', 'in:camera,upload,mixed'],
+            'symptoms' => ['required', 'string', 'max:255'],
+            'location' => ['required', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'images' => ['required', 'array', 'min:1'],
+            'images.*' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:10240'],
+        ], [
+            'capture_mode.required' => 'กรุณาเลือกวิธีการถ่ายหรืออัปโหลดภาพ',
+            'capture_mode.in' => 'รูปแบบการถ่ายภาพไม่ถูกต้อง',
+            'symptoms.required' => 'กรุณากรอกอาการ / โรค',
+            'location.required' => 'กรุณากรอกตำแหน่งที่ถ่าย',
+            'images.required' => 'กรุณาเพิ่มภาพอย่างน้อย 1 ภาพ',
+            'images.array' => 'รูปแบบไฟล์ไม่ถูกต้อง',
+            'images.min' => 'กรุณาเพิ่มภาพอย่างน้อย 1 ภาพ',
+            'images.*.file' => 'ไฟล์ภาพไม่ถูกต้อง',
+            'images.*.mimes' => 'รองรับไฟล์ภาพ JPG, JPEG, PNG, WEBP, HEIC, HEIF',
+        ]);
+
+        if (! Schema::hasTable('skin_image_records')) {
+            abort(500, 'ยังไม่ได้สร้างตาราง skin_image_records');
+        }
+
+        $storedPaths = [];
+        foreach ($request->file('images', []) as $file) {
+            $storedPaths[] = $file->store('skin-images/' . now()->format('Y/m/d'), 'public');
+        }
+
+        $recordId = DB::table('skin_image_records')->insertGetId([
+            'user_id' => $user->id,
+            'capture_mode' => $validated['capture_mode'],
+            'symptoms' => $validated['symptoms'],
+            'location' => $validated['location'],
+            'notes' => $validated['notes'] ?? null,
+            'primary_image_path' => $storedPaths[0] ?? null,
+            'image_paths' => json_encode($storedPaths, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'image_count' => count($storedPaths),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->recordTaskCompletion($user->id, self::SKIN_IMAGE_UPLOAD_TASK_KEY);
+        $this->writeLog($user->id, 'save_skin_image', 'บันทึกภาพผิวหนัง', '/app/upload', [
+            'record_id' => $recordId,
+            'image_count' => count($storedPaths),
+            'capture_mode' => $validated['capture_mode'],
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'บันทึกภาพผิวหนังเรียบร้อยแล้ว',
+                'redirect_url' => route('app.library'),
+            ]);
+        }
+
+        return redirect()->route('app.library')->with('success', 'บันทึกภาพผิวหนังเรียบร้อยแล้ว');
     }
 
     public function notifications()

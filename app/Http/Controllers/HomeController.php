@@ -26,7 +26,9 @@ class HomeController extends Controller
     {
         $user = $request->user();
         $overviewTaskKey = 'system_overview';
+        $uploadTaskKey = 'skin_image_upload';
         $overviewTaskCompleted = false;
+        $uploadTaskCompleted = false;
 
         if ($user?->role === 'research_participant') {
             $overviewTaskCompleted = UserTaskCompletion::query()
@@ -35,7 +37,13 @@ class HomeController extends Controller
                 ->whereNotNull('completed_at')
                 ->exists();
 
-            return view('home', compact('overviewTaskCompleted'));
+            $uploadTaskCompleted = UserTaskCompletion::query()
+                ->where('user_id', $user->id)
+                ->where('task_key', $uploadTaskKey)
+                ->whereNotNull('completed_at')
+                ->exists();
+
+            return view('home', compact('overviewTaskCompleted', 'uploadTaskCompleted'));
         }
 
         return view('admin.home', [

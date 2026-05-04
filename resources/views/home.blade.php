@@ -313,6 +313,7 @@
         }
 
         .menu-card {
+            position: relative;
             min-height: 162px;
             border-radius: 24px;
             background: #ffffff;
@@ -327,6 +328,34 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
+        }
+
+        .menu-card--done {
+            background: #f0fdf4;
+            border-color: rgba(34, 197, 94, 0.18);
+        }
+
+        .menu-card--done .menu-icon-wrap {
+            background: rgba(34, 197, 94, 0.14) !important;
+            color: #166534 !important;
+        }
+
+        .menu-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: rgba(34, 197, 94, 0.14);
+            color: #166534;
+        }
+
+        .menu-card--done .menu-title,
+        .menu-card--done .menu-lead {
+            color: #166534;
         }
 
         .menu-card:hover {
@@ -559,6 +588,7 @@
                 'color' => '#4459dd',
                 'bg' => 'rgba(69, 89, 221, 0.10)',
                 'url' => route('app.upload'),
+                'done' => $uploadTaskCompleted ?? false,
             ],
             [
                 'title' => 'คลังภาพของฉัน',
@@ -704,7 +734,7 @@
 
         <div class="menu-grid mb-3">
             @foreach ($quickMenus as $menu)
-                <a href="{{ $menu['url'] }}" class="menu-card {{ $menu['full'] ?? false ? 'menu-card--full' : '' }}">
+                <a href="{{ $menu['url'] }}" class="menu-card {{ $menu['full'] ?? false ? 'menu-card--full' : '' }} {{ !empty($menu['done']) ? 'menu-card--done' : '' }}">
                     <div class="menu-icon-wrap" style="background: {{ $menu['bg'] }}; color: {{ $menu['color'] }}">
                         <i class="fa-solid {{ $menu['icon'] }}"></i>
                     </div>
@@ -712,6 +742,12 @@
                         <p class="menu-title">{{ $menu['title'] }}</p>
                         @if (!empty($menu['lead']))
                             <p class="menu-lead">{{ $menu['lead'] }}</p>
+                        @endif
+                        @if (!empty($menu['done']))
+                            <span class="menu-status">
+                                <i class="fa-solid fa-circle-check"></i>
+                                ทำแล้ว
+                            </span>
                         @endif
                     </div>
                     @if (($menu['full'] ?? false) === true)
