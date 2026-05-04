@@ -58,12 +58,16 @@ Index Of Script
         if (navbar !== null) {
             if (yOffset >= 0) {
                 navbar.classList.add("menu-sticky");
-                contaitInner.classList.add('navbar-sticky-space');
+                if (contaitInner !== null) {
+                    contaitInner.classList.add('navbar-sticky-space');
+                }
             } else {
                 navbar.classList.remove("menu-sticky");
             }
         } else {
-            contaitInner.classList.remove('navbar-sticky-space');
+            if (contaitInner !== null) {
+                contaitInner.classList.remove('navbar-sticky-space');
+            }
         }
     });
     /*------------Popover--------------*/

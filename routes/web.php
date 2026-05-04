@@ -19,6 +19,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/upload', [MobileMenuController::class, 'upload'])->name('upload');
         Route::post('/upload', [MobileMenuController::class, 'storeUpload'])->name('upload.store');
         Route::get('/library', [MobileMenuController::class, 'library'])->name('library');
+        Route::get('/library/{id}', [MobileMenuController::class, 'libraryShow'])->name('library.show');
         Route::get('/consent', [MobileMenuController::class, 'consent'])->name('consent');
         Route::get('/access', [MobileMenuController::class, 'access'])->name('access');
         Route::get('/history', [MobileMenuController::class, 'history'])->name('history');

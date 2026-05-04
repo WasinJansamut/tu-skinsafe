@@ -134,6 +134,10 @@
             overflow: hidden;
         }
 
+        .record-card.is-expanded {
+            border-color: rgba(69, 82, 208, 0.18);
+        }
+
         .record-card-top {
             padding: 14px;
             display: flex;
@@ -170,6 +174,22 @@
             flex: 1;
         }
 
+        .record-detail-chevron {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            flex: 0 0 auto;
+            border: 1px solid rgba(69, 82, 208, 0.10);
+            background: rgba(69, 82, 208, 0.08);
+            color: #4552d0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            margin-left: 8px;
+            align-self: center;
+        }
+
         .record-title {
             font-size: 1rem;
             font-weight: 700;
@@ -203,6 +223,20 @@
             color: #4552d0;
         }
 
+        .record-badge--toggle {
+            border: 0;
+            cursor: pointer;
+        }
+
+        .record-badge--toggle .record-badge-label {
+            display: none;
+            white-space: nowrap;
+        }
+
+        .record-badge--toggle.is-revealed .record-badge-label {
+            display: inline;
+        }
+
         .record-gallery {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -223,6 +257,46 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
+        }
+
+        .record-gallery-toggle {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 0;
+            text-align: left;
+        }
+
+        .record-gallery-toggle i {
+            transition: transform 0.15s ease;
+        }
+
+        .record-card.is-expanded .record-gallery-toggle i {
+            transform: rotate(180deg);
+        }
+
+        .record-collapsed-note {
+            margin: 0 14px 12px;
+            padding: 10px 12px;
+            border-radius: 16px;
+            background: #f8faff;
+            border: 1px solid rgba(69, 82, 208, 0.10);
+            color: #4552d0;
+            font-size: 0.86rem;
+            font-weight: 700;
+        }
+
+        .record-detail-preview {
+            display: none;
+        }
+
+        .record-card.is-expanded .record-detail-preview {
             display: block;
         }
 
@@ -360,8 +434,9 @@
                     <span>ภาพทั้งหมด</span>
                 </div>
                 <div class="summary-chip">
+                    {{-- <span>รายการล่าสุด</span> --}}
                     <strong>{{ optional($records->first())->created_at_text ?? '-' }}</strong>
-                    <span>รายการล่าสุด</span>
+
                 </div>
             </div>
         </div>
@@ -381,11 +456,11 @@
             @else
                 <div class="record-list">
                     @foreach ($records as $record)
-                        <div class="record-card">
+                        <div class="record-card" data-record-card="{{ $record->id }}">
                             <div class="record-card-top">
                                 @php
-                                    $previewGroup = 'record-' . $record->id;
                                     $previewUrl = $record->thumbnail_url ?? (!empty($record->paths[0]) ? Storage::url($record->paths[0]) : null);
+                                    $extraCount = max(((int) ($record->image_total ?? 0)) - 1, 0);
                                 @endphp
                                 @if (!empty($previewUrl))
                                     <a href="{{ $previewUrl }}" class="record-thumb is-clickable js-image-open" data-full-src="{{ $previewUrl }}" data-title="{{ $record->symptoms ?? 'ภาพผิวหนัง' }}">
@@ -406,33 +481,43 @@
                                     @endif
 
                                     <div class="record-badges">
-                                        <span class="record-badge">
+                                        <button type="button" class="record-badge record-badge--toggle js-mode-badge" data-mode-label="{{ $record->capture_mode === 'camera' ? 'ถ่ายภาพ' : ($record->capture_mode === 'upload' ? 'อัปโหลดจากเครื่อง' : 'ถ่าย + อัปโหลด') }}" aria-label="แสดงรายละเอียดวิธีบันทึกภาพ">
                                             <i class="fa-solid fa-camera"></i>
-                                            {{ $record->capture_mode === 'camera' ? 'ถ่ายภาพ' : ($record->capture_mode === 'upload' ? 'อัปโหลดจากเครื่อง' : 'ถ่าย + อัปโหลด') }}
-                                        </span>
+                                            <span class="record-badge-label">{{ $record->capture_mode === 'camera' ? 'ถ่ายภาพ' : ($record->capture_mode === 'upload' ? 'อัปโหลดจากเครื่อง' : 'ถ่าย + อัปโหลด') }}</span>
+                                        </button>
                                         <span class="record-badge">
                                             <i class="fa-regular fa-images"></i>
                                             {{ $record->image_total ?? 0 }} ภาพ
                                         </span>
                                     </div>
+
                                 </div>
+
+                                <a href="{{ route('app.library.show', $record->id) }}" class="record-detail-chevron" aria-label="ดูรายละเอียดทั้งหมด">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </a>
                             </div>
 
-                            @if (!empty($record->paths) && is_array($record->paths))
-                                <div class="record-gallery">
-                                    @foreach (array_slice($record->paths, 0, 4) as $path)
-                                        @php $imageUrl = Storage::url($path); @endphp
-                                        <a href="{{ $imageUrl }}" class="record-gallery-item is-clickable js-image-open" data-full-src="{{ $imageUrl }}" data-title="{{ $record->symptoms ?? 'ภาพผิวหนัง' }}">
-                                            <img src="{{ $imageUrl }}" alt="gallery">
-                                        </a>
-                                    @endforeach
-                                    @if (($record->image_total ?? 0) > 4)
-                                        <div class="record-gallery-item d-flex align-items-center justify-content-center bg-light text-muted fw-semibold">
-                                            +{{ $record->image_total - 4 }}
-                                        </div>
-                                    @endif
+                            @if (!empty($record->paths) && is_array($record->paths) && count($record->paths) > 1)
+                                <div class="record-collapsed-note">
+                                    <button type="button" class="record-gallery-toggle js-toggle-gallery" aria-expanded="false">
+                                        <span>แสดงภาพเพิ่มเติม {{ $extraCount }} ภาพ</span>
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </button>
+                                </div>
+
+                                <div class="record-detail-preview">
+                                    <div class="record-gallery">
+                                        @foreach (array_slice($record->paths, 1) as $path)
+                                            @php $imageUrl = Storage::url($path); @endphp
+                                            <a href="{{ $imageUrl }}" class="record-gallery-item is-clickable js-image-open" data-full-src="{{ $imageUrl }}" data-title="{{ $record->symptoms ?? 'ภาพผิวหนัง' }}">
+                                                <img src="{{ $imageUrl }}" alt="gallery">
+                                            </a>
+                                        @endforeach
+                                    </div>
                                 </div>
                             @endif
+
                         </div>
                     @endforeach
                 </div>
@@ -479,6 +564,8 @@
             const zoomOutBtn = document.getElementById('zoomOutBtn');
             const zoomResetBtn = document.getElementById('zoomResetBtn');
             const triggers = document.querySelectorAll('.js-image-open');
+            const galleryToggles = document.querySelectorAll('.js-toggle-gallery');
+            const modeBadges = document.querySelectorAll('.js-mode-badge');
 
             let scale = 1;
             let translateX = 0;
@@ -518,6 +605,23 @@
                 });
             });
 
+            galleryToggles.forEach((toggle) => {
+                toggle.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const card = toggle.closest('.record-card');
+                    if (!card) return;
+
+                    const expanded = card.classList.toggle('is-expanded');
+                    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                });
+            });
+
+            modeBadges.forEach((badge) => {
+                badge.addEventListener('click', () => {
+                    badge.classList.toggle('is-revealed');
+                });
+            });
+
             closeBtn.addEventListener('click', closeModal);
             modal.addEventListener('click', (event) => {
                 if (event.target === modal) {
@@ -550,7 +654,9 @@
                     translateY = 0;
                 }
                 applyTransform();
-            }, { passive: false });
+            }, {
+                passive: false
+            });
 
             let startX = 0;
             let startY = 0;

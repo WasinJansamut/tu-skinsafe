@@ -596,6 +596,7 @@
                 'color' => '#3f7d3f',
                 'bg' => 'rgba(145, 214, 121, 0.20)',
                 'url' => route('app.library'),
+                'done' => $libraryTaskCompleted ?? false,
             ],
             [
                 'title' => 'การยินยอมและการแชร์ข้อมูล',
@@ -770,7 +771,7 @@
 
         <div class="section-card mb-2">
             <div class="section-header">
-                <h2 class="section-title">การแจ้งเตือน</h2>
+                <h2 class="section-title">การแจ้งเตือน <span class="text-muted small">(mockup)</span></h2>
                 <a href="{{ route('app.notifications') }}" class="section-link">ดูทั้งหมด</a>
             </div>
 
@@ -789,7 +790,7 @@
 
         <div class="section-card mb-3">
             <div class="section-header">
-                <h2 class="section-title">สถานะการแชร์ข้อมูลล่าสุด</h2>
+                <h2 class="section-title">สถานะการแชร์ข้อมูลล่าสุด <span class="text-muted small">(mockup)</span></h2>
                 <a href="{{ route('app.shares') }}" class="section-link">ดูทั้งหมด</a>
             </div>
 

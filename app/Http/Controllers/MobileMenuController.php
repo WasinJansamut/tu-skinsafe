@@ -12,6 +12,7 @@ class MobileMenuController extends Controller
 {
     private const SYSTEM_OVERVIEW_TASK_KEY = 'system_overview';
     private const SKIN_IMAGE_UPLOAD_TASK_KEY = 'skin_image_upload';
+    private const LIBRARY_DETAIL_TASK_KEY = 'library_detail';
 
     private function page(array $data)
     {
@@ -92,7 +93,7 @@ class MobileMenuController extends Controller
                         : (! empty($paths[0]) ? Storage::url($paths[0]) : null);
                     $record->image_total = (int) ($record->image_count ?? count($paths));
                     $record->created_at_text = ! empty($record->created_at)
-                        ? \Illuminate\Support\Carbon::parse($record->created_at)->format('d/m/Y H:i')
+                        ? \Illuminate\Support\Carbon::parse($record->created_at)->addYears(543)->format('d/m/y H:i')
                         : '-';
                     $record->paths = $paths;
 
@@ -105,6 +106,47 @@ class MobileMenuController extends Controller
         return view('mobile.library', [
             'page_title' => 'คลังภาพของฉัน',
             'records' => $records,
+        ]);
+    }
+
+    public function libraryShow(int $id)
+    {
+        $user = auth()->user();
+
+        if (! Schema::hasTable('skin_image_records')) {
+            abort(404);
+        }
+
+        $record = DB::table('skin_image_records')
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $record) {
+            abort(404);
+        }
+
+        $paths = json_decode($record->image_paths ?? '[]', true) ?: [];
+        $record->paths = $paths;
+        $record->thumbnail_url = ! empty($record->primary_image_path)
+            ? Storage::url($record->primary_image_path)
+            : (! empty($paths[0]) ? Storage::url($paths[0]) : null);
+        $record->image_total = (int) ($record->image_count ?? count($paths));
+        $record->created_at_text = ! empty($record->created_at)
+            ? \Illuminate\Support\Carbon::parse($record->created_at)->addYears(543)->format('d/m/y H:i')
+            : '-';
+        $record->updated_at_text = ! empty($record->updated_at)
+            ? \Illuminate\Support\Carbon::parse($record->updated_at)->addYears(543)->format('d/m/y H:i')
+            : '-';
+
+        $this->writeLog($user->id, 'view_skin_image_detail', 'เปิดดูรายละเอียดรายการภาพผิวหนัง', '/app/library/' . $record->id, [
+            'record_id' => $record->id,
+        ]);
+        $this->recordTaskCompletion($user->id, self::LIBRARY_DETAIL_TASK_KEY);
+
+        return view('mobile.library_show', [
+            'page_title' => 'รายละเอียดรายการภาพ',
+            'record' => $record,
         ]);
     }
 
