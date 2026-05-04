@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\MobileMenuController;
 use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\UserController;
@@ -37,6 +38,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/responses', [QuestionnaireController::class, 'responses'])->name('questionnaire.responses');
         Route::get('/responses/{id}', [QuestionnaireController::class, 'showResponse'])->name('questionnaire.responses.show');
         Route::get('/summary', [QuestionnaireController::class, 'summary'])->name('questionnaire.summary');
+    });
+
+    Route::prefix('evaluation')->group(function () {
+        Route::get('/responses', [EvaluationController::class, 'responses'])->name('evaluation.responses');
+        Route::get('/responses/{id}', [EvaluationController::class, 'showResponse'])->name('evaluation.responses.show');
+        Route::get('/summary', [EvaluationController::class, 'summary'])->name('evaluation.summary');
     });
 
     // ข้อมูลผู้ใช้งาน

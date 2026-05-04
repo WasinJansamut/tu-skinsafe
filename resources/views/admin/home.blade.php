@@ -79,5 +79,43 @@
                 </a>
             </div>
         </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-md-4">
+                <a href="{{ route('evaluation.responses') }}" class="text-decoration-none">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center" style="width:52px;height:52px;">
+                                    <i class="fa-solid fa-clipboard-check fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1 text-dark">คำตอบแบบประเมิน</h5>
+                                    <div class="text-muted">ดูคำตอบรายรายการของแบบประเมินผลการใช้งานระบบต้นแบบ</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-4">
+                <a href="{{ route('evaluation.summary') }}" class="text-decoration-none">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-warning-subtle text-warning d-inline-flex align-items-center justify-content-center" style="width:52px;height:52px;">
+                                    <i class="fa-solid fa-chart-simple fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1 text-dark">ผลรวมแบบประเมิน</h5>
+                                    <div class="text-muted">สรุปค่าเฉลี่ยและภาพรวมผลการประเมิน</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
     </div>
 @endsection

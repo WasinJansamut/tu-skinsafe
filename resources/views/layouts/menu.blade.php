@@ -78,6 +78,26 @@
                             <span class="item-name">Questionnaire Summary</span>
                         </a>
                     </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ Request::is('evaluation/responses') || Request::is('evaluation/responses/*') ? 'active' : '' }}"
+                            href="{{ route('evaluation.responses') }}">
+                            <i class="icon" data-bs-toggle="tooltip" title="คำตอบแบบประเมิน" data-bs-placement="right">
+                                <i class="fa-solid fa-clipboard-check"></i>
+                            </i>
+                            <span class="item-name">คำตอบแบบประเมิน</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ Request::is('evaluation/summary') ? 'active' : '' }}"
+                            href="{{ route('evaluation.summary') }}">
+                            <i class="icon" data-bs-toggle="tooltip" title="ผลรวมแบบประเมิน" data-bs-placement="right">
+                                <i class="fa-solid fa-chart-simple"></i>
+                            </i>
+                            <span class="item-name">ผลรวมแบบประเมิน</span>
+                        </a>
+                    </li>
                 @endif
             </ul>
             <!-- Sidebar Menu End -->
