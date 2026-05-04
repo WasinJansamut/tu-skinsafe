@@ -335,9 +335,21 @@
             border-color: rgba(34, 197, 94, 0.18);
         }
 
+        .menu-card--disabled {
+            background: #f3f4f6;
+            border-color: rgba(148, 163, 184, 0.24);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
         .menu-card--done .menu-icon-wrap {
             background: rgba(34, 197, 94, 0.14) !important;
             color: #166534 !important;
+        }
+
+        .menu-card--disabled .menu-icon-wrap {
+            background: rgba(148, 163, 184, 0.18) !important;
+            color: #6b7280 !important;
         }
 
         .menu-status {
@@ -356,6 +368,11 @@
         .menu-card--done .menu-title,
         .menu-card--done .menu-lead {
             color: #166534;
+        }
+
+        .menu-card--disabled .menu-title,
+        .menu-card--disabled .menu-lead {
+            color: #6b7280;
         }
 
         .menu-card:hover {
@@ -628,11 +645,11 @@
             ],
         ];
 
-        $consentCard = [
-            'title' => 'แบบฟอร์มยืนยัน/ยอมรับการเข้าร่วม',
-            'icon' => 'fa-circle-user',
-            'lead' => 'อ่านคำชี้แจงและยืนยันก่อนเข้าร่วมวิจัย',
-            'url' => route('app.consent'),
+        $evaluationCard = [
+            'title' => 'แบบประเมินผลการใช้งานระบบต้นแบบ',
+            'icon' => 'fa-clipboard-check',
+            'lead' => 'กรุณาใช้งานระบบให้ครบทุกฟังก์ชั่นก่อนเริ่มประเมิน',
+            'url' => route('app.evaluation'),
         ];
 
         $notifications = [
@@ -758,16 +775,33 @@
             @endforeach
         </div>
 
-        <a href="{{ $consentCard['url'] }}" class="menu-card menu-card--full mb-3">
-            <div class="menu-icon-wrap" style="background: rgba(84, 113, 255, 0.10); color: #4552d0">
-                <i class="fa-solid {{ $consentCard['icon'] }}"></i>
-            </div>
-            <div class="menu-copy">
-                <p class="menu-title">{{ $consentCard['title'] }}</p>
-                <p class="menu-lead">{{ $consentCard['lead'] }}</p>
-            </div>
-            <i class="fa-solid fa-chevron-right text-muted fs-5"></i>
-        </a>
+        @if (!empty($evaluationTaskCompleted))
+            <a href="{{ $evaluationCard['url'] }}" class="menu-card menu-card--full mb-3 menu-card--done">
+                <div class="menu-icon-wrap" style="background: rgba(84, 113, 255, 0.10); color: #4552d0">
+                    <i class="fa-solid {{ $evaluationCard['icon'] }}"></i>
+                </div>
+                <div class="menu-copy">
+                    <p class="menu-title">{{ $evaluationCard['title'] }}</p>
+                    <p class="menu-lead">{{ $evaluationCard['lead'] }}</p>
+                    <span class="menu-status">
+                        <i class="fa-solid fa-circle-check"></i>
+                        ทำแบบประเมินครบถ้วนแล้ว
+                    </span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-muted fs-5"></i>
+            </a>
+        @else
+            <a href="{{ $evaluationCard['url'] }}" class="menu-card menu-card--full mb-3">
+                <div class="menu-icon-wrap" style="background: rgba(148, 163, 184, 0.18); color: #6b7280">
+                    <i class="fa-solid {{ $evaluationCard['icon'] }}"></i>
+                </div>
+                <div class="menu-copy">
+                    <p class="menu-title">{{ $evaluationCard['title'] }}</p>
+                    <p class="menu-lead">{{ $evaluationCard['lead'] }}</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-muted fs-5"></i>
+            </a>
+        @endif
 
         <div class="section-card mb-2">
             <div class="section-header">

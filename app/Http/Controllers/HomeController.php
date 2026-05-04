@@ -28,9 +28,18 @@ class HomeController extends Controller
         $overviewTaskKey = 'system_overview';
         $uploadTaskKey = 'skin_image_upload';
         $libraryTaskKey = 'library_detail';
+        $consentTaskKey = 'consent_page';
+        $accessTaskKey = 'access_page';
+        $historyTaskKey = 'history_page';
+        $evaluationTaskKey = 'evaluation_form';
         $overviewTaskCompleted = false;
         $uploadTaskCompleted = false;
         $libraryTaskCompleted = false;
+        $consentTaskCompleted = false;
+        $accessTaskCompleted = false;
+        $historyTaskCompleted = false;
+        $evaluationTaskCompleted = false;
+        $evaluationReady = false;
 
         if ($user?->role === 'research_participant') {
             $overviewTaskCompleted = UserTaskCompletion::query()
@@ -51,7 +60,47 @@ class HomeController extends Controller
                 ->whereNotNull('completed_at')
                 ->exists();
 
-            return view('home', compact('overviewTaskCompleted', 'uploadTaskCompleted', 'libraryTaskCompleted'));
+            $consentTaskCompleted = UserTaskCompletion::query()
+                ->where('user_id', $user->id)
+                ->where('task_key', $consentTaskKey)
+                ->whereNotNull('completed_at')
+                ->exists();
+
+            $accessTaskCompleted = UserTaskCompletion::query()
+                ->where('user_id', $user->id)
+                ->where('task_key', $accessTaskKey)
+                ->whereNotNull('completed_at')
+                ->exists();
+
+            $historyTaskCompleted = UserTaskCompletion::query()
+                ->where('user_id', $user->id)
+                ->where('task_key', $historyTaskKey)
+                ->whereNotNull('completed_at')
+                ->exists();
+
+            $evaluationTaskCompleted = UserTaskCompletion::query()
+                ->where('user_id', $user->id)
+                ->where('task_key', $evaluationTaskKey)
+                ->whereNotNull('completed_at')
+                ->exists();
+
+            $evaluationReady = $overviewTaskCompleted
+                && $uploadTaskCompleted
+                && $libraryTaskCompleted
+                && $consentTaskCompleted
+                && $accessTaskCompleted
+                && $historyTaskCompleted;
+
+            return view('home', compact(
+                'overviewTaskCompleted',
+                'uploadTaskCompleted',
+                'libraryTaskCompleted',
+                'consentTaskCompleted',
+                'accessTaskCompleted',
+                'historyTaskCompleted',
+                'evaluationTaskCompleted',
+                'evaluationReady'
+            ));
         }
 
         return view('admin.home', [

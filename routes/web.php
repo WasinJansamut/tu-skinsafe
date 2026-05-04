@@ -27,6 +27,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/status', [MobileMenuController::class, 'status'])->name('status');
         Route::get('/system-overview', [MobileMenuController::class, 'systemOverview'])->name('system_overview');
         Route::post('/system-overview/complete', [MobileMenuController::class, 'completeSystemOverview'])->name('system_overview.complete');
+        Route::get('/evaluation', [MobileMenuController::class, 'evaluation'])->name('evaluation');
+        Route::post('/evaluation', [MobileMenuController::class, 'submitEvaluation'])->name('evaluation.store');
         Route::get('/notifications', [MobileMenuController::class, 'notifications'])->name('notifications');
         Route::get('/shares', [MobileMenuController::class, 'shares'])->name('shares');
     });

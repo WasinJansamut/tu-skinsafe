@@ -13,6 +13,10 @@ class MobileMenuController extends Controller
     private const SYSTEM_OVERVIEW_TASK_KEY = 'system_overview';
     private const SKIN_IMAGE_UPLOAD_TASK_KEY = 'skin_image_upload';
     private const LIBRARY_DETAIL_TASK_KEY = 'library_detail';
+    private const CONSENT_PAGE_TASK_KEY = 'consent_page';
+    private const ACCESS_PAGE_TASK_KEY = 'access_page';
+    private const HISTORY_PAGE_TASK_KEY = 'history_page';
+    private const EVALUATION_FORM_TASK_KEY = 'evaluation_form';
 
     private function page(array $data)
     {
@@ -152,6 +156,10 @@ class MobileMenuController extends Controller
 
     public function consent()
     {
+        $user = auth()->user();
+        $this->writeLog($user->id, 'view_consent_page', 'เปิดหน้าการยินยอมและการแชร์ข้อมูล', '/app/consent');
+        $this->recordTaskCompletion($user->id, self::CONSENT_PAGE_TASK_KEY);
+
         return $this->page([
             'page_title' => 'การยินยอมและการแชร์ข้อมูล',
             'page_icon' => 'fa-user-group',
@@ -169,6 +177,10 @@ class MobileMenuController extends Controller
 
     public function access()
     {
+        $user = auth()->user();
+        $this->writeLog($user->id, 'view_access_page', 'เปิดหน้าสิทธิ์การเข้าถึงข้อมูล', '/app/access');
+        $this->recordTaskCompletion($user->id, self::ACCESS_PAGE_TASK_KEY);
+
         return $this->page([
             'page_title' => 'สิทธิ์การเข้าถึงข้อมูล',
             'page_icon' => 'fa-lock',
@@ -186,6 +198,10 @@ class MobileMenuController extends Controller
 
     public function history()
     {
+        $user = auth()->user();
+        $this->writeLog($user->id, 'view_history_page', 'เปิดหน้าประวัติการเข้าถึงและการแจ้งเตือน', '/app/history');
+        $this->recordTaskCompletion($user->id, self::HISTORY_PAGE_TASK_KEY);
+
         return $this->page([
             'page_title' => 'ประวัติการเข้าถึงและการแจ้งเตือน',
             'page_icon' => 'fa-clock',
@@ -199,6 +215,80 @@ class MobileMenuController extends Controller
                 ['title' => 'การยืนยันจะหมดอายุ', 'meta' => '2 ชั่วโมงที่แล้ว'],
             ],
         ]);
+    }
+
+    public function evaluation()
+    {
+        $user = auth()->user();
+        $ready = $this->isTaskCompleted($user->id, self::SYSTEM_OVERVIEW_TASK_KEY)
+            && $this->isTaskCompleted($user->id, self::SKIN_IMAGE_UPLOAD_TASK_KEY)
+            && $this->isTaskCompleted($user->id, self::LIBRARY_DETAIL_TASK_KEY)
+            && $this->isTaskCompleted($user->id, self::CONSENT_PAGE_TASK_KEY)
+            && $this->isTaskCompleted($user->id, self::ACCESS_PAGE_TASK_KEY)
+            && $this->isTaskCompleted($user->id, self::HISTORY_PAGE_TASK_KEY);
+
+        $completed = $this->isTaskCompleted($user->id, self::EVALUATION_FORM_TASK_KEY);
+
+        $this->writeLog($user->id, 'view_evaluation_page', 'เปิดหน้าแบบประเมินผลการใช้งานระบบต้นแบบ', '/app/evaluation');
+
+        return view('mobile.evaluation', [
+            'page_title' => 'แบบประเมินผลการใช้งานระบบต้นแบบ',
+            'ready' => $ready,
+            'completed' => $completed,
+        ]);
+    }
+
+    public function submitEvaluation(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'age' => ['required', 'integer', 'min:1', 'max:120'],
+            'gender' => ['required', 'in:male,female,other'],
+            'gender_other' => ['nullable', 'string', 'max:100'],
+            'education' => ['required', 'in:below_bachelor,bachelor,higher'],
+            'treatment_count' => ['required', 'in:1_2,3_5,more_5'],
+            'telemedicine_experience' => ['required', 'in:yes,no'],
+            'scale_answers' => ['required', 'array', 'size:15'],
+            'scale_answers.*' => ['required', 'integer', 'between:1,5'],
+            'section3_1' => ['nullable', 'string', 'max:2000'],
+            'section3_2' => ['nullable', 'string', 'max:2000'],
+            'section3_3' => ['nullable', 'string', 'max:2000'],
+            'section3_4' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if (! Schema::hasTable('system_evaluation_responses')) {
+            abort(500, 'ยังไม่ได้สร้างตาราง system_evaluation_responses');
+        }
+
+        DB::table('system_evaluation_responses')->updateOrInsert(
+            ['user_id' => $user->id],
+            [
+                'general_answers_json' => json_encode([
+                    'age' => $validated['age'],
+                    'gender' => $validated['gender'],
+                    'gender_other' => $validated['gender_other'] ?? null,
+                    'education' => $validated['education'],
+                    'treatment_count' => $validated['treatment_count'],
+                    'telemedicine_experience' => $validated['telemedicine_experience'],
+                ], JSON_UNESCAPED_UNICODE),
+                'scale_answers_json' => json_encode($validated['scale_answers'], JSON_UNESCAPED_UNICODE),
+                'open_answers_json' => json_encode([
+                    'section3_1' => $validated['section3_1'] ?? null,
+                    'section3_2' => $validated['section3_2'] ?? null,
+                    'section3_3' => $validated['section3_3'] ?? null,
+                    'section3_4' => $validated['section3_4'] ?? null,
+                ], JSON_UNESCAPED_UNICODE),
+                'submitted_at' => now(),
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        $this->recordTaskCompletion($user->id, self::EVALUATION_FORM_TASK_KEY);
+        $this->writeLog($user->id, 'submit_evaluation_form', 'บันทึกแบบประเมินผลการใช้งานระบบต้นแบบ', '/app/evaluation');
+
+        return redirect()->route('home')->with('success', 'ทำแบบประเมินครบถ้วนแล้ว');
     }
 
     public function about()
