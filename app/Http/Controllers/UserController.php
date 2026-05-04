@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -20,11 +22,91 @@ class UserController extends Controller
         }
     }
 
+    private function writeAuditLog(string $actionKey, string $actionLabel, string $pagePath, array $details = []): void
+    {
+        if (! Schema::hasTable('system_logs')) {
+            return;
+        }
+
+        $payload = [
+            'user_id' => Auth::id(),
+            'action_key' => $actionKey,
+            'action_label' => $actionLabel,
+            'page_path' => $pagePath,
+            'details' => ! empty($details) ? json_encode($details, JSON_UNESCAPED_UNICODE) : null,
+            'created_at' => now(),
+        ];
+
+        $currentUser = Auth::user();
+
+        if (Schema::hasColumn('system_logs', 'actor_name')) {
+            $payload['actor_name'] = $currentUser?->name;
+        }
+
+        if (Schema::hasColumn('system_logs', 'actor_role')) {
+            $payload['actor_role'] = $currentUser?->role;
+        }
+
+        if (Schema::hasColumn('system_logs', 'action_type')) {
+            $payload['action_type'] = 'delete';
+        }
+
+        if (Schema::hasColumn('system_logs', 'target_type')) {
+            $payload['target_type'] = $details['target_user_role'] ?? 'research_participant';
+        }
+
+        if (Schema::hasColumn('system_logs', 'target_id')) {
+            $payload['target_id'] = $details['target_user_id'] ?? null;
+        }
+
+        if (Schema::hasColumn('system_logs', 'description')) {
+            $payload['description'] = $actionLabel;
+        }
+
+        if (Schema::hasColumn('system_logs', 'is_read')) {
+            $payload['is_read'] = 0;
+        }
+
+        DB::table('system_logs')->insert($payload);
+    }
+
     public function index(Request $request)
     {
         $this->ensureAdmin();
 
         $users = User::orderBy('created_at', 'DESC')->get();
+        $taskKeys = [
+            'system_overview',
+            'skin_image_upload',
+            'library_detail',
+            'consent_page',
+            'access_page',
+            'history_page',
+        ];
+        $taskTotal = count($taskKeys);
+        $taskCounts = DB::table('user_task_completions')
+            ->whereIn('task_key', $taskKeys)
+            ->whereNotNull('completed_at')
+            ->groupBy('user_id')
+            ->selectRaw('user_id, COUNT(DISTINCT task_key) as task_completed_count')
+            ->pluck('task_completed_count', 'user_id');
+
+        $users = $users->map(function ($user) use ($taskCounts, $taskTotal) {
+            if (($user->role ?? null) === 'research_participant') {
+                $completed = (int) ($taskCounts[$user->id] ?? 0);
+                $user->task_completed_count = $completed;
+                $user->task_completed_total = $taskTotal;
+                $user->task_completed_label = $completed . '/' . $taskTotal;
+                $user->task_completed_class = $completed >= $taskTotal ? 'bg-success' : 'bg-secondary';
+            } else {
+                $user->task_completed_count = null;
+                $user->task_completed_total = null;
+                $user->task_completed_label = '-';
+                $user->task_completed_class = 'bg-secondary';
+            }
+
+            return $user;
+        });
 
         return view('user.index', compact('users'));
     }
@@ -213,6 +295,76 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('user.index')->with('success', 'ลบข้อมูลผู้ใช้งานเรียบร้อยแล้ว');
+    }
+
+    public function reset_participant_data(Request $request, $id)
+    {
+        $this->ensureAdmin();
+
+        $user = User::findOrFail($id);
+
+        if ($user->role !== 'research_participant') {
+            return redirect()->route('user.index')->with('danger', 'คำสั่งรีเซ็ตนี้ใช้ได้เฉพาะผู้เข้าร่วมวิจัย');
+        }
+
+        $tablesToClear = [
+            'skin_image_records',
+            'user_access_permissions',
+            'user_consent_records',
+            'system_evaluation_responses',
+            'user_task_completions',
+            'system_logs',
+            'user_share_permissions',
+            'user_data_shares',
+            'skin_image_shares',
+        ];
+
+        $summary = [];
+
+        DB::transaction(function () use ($user, $tablesToClear, &$summary) {
+            foreach ($tablesToClear as $table) {
+                if (! Schema::hasTable($table)) {
+                    continue;
+                }
+
+                $columns = Schema::getColumnListing($table);
+                if ($table === 'system_logs') {
+                    $query = DB::table($table)->where(function ($nested) use ($user, $columns) {
+                        if (in_array('user_id', $columns, true)) {
+                            $nested->where('user_id', $user->id);
+                        }
+                        if (in_array('target_id', $columns, true)) {
+                            $nested->orWhere('target_id', $user->id);
+                        }
+                        if (in_array('details', $columns, true)) {
+                            $nested->orWhere('details', 'like', '%"target_user_id":' . $user->id . '%')
+                                ->orWhere('details', 'like', '%"user_id":' . $user->id . '%')
+                                ->orWhere('details', 'like', '%"target_id":' . $user->id . '%');
+                        }
+                    });
+
+                    $summary[$table] = (clone $query)->count();
+                    $query->delete();
+                    continue;
+                }
+
+                if (! in_array('user_id', $columns, true)) {
+                    continue;
+                }
+
+                $summary[$table] = DB::table($table)->where('user_id', $user->id)->count();
+                DB::table($table)->where('user_id', $user->id)->delete();
+            }
+        });
+
+        $this->writeAuditLog('reset_participant_data', 'รีเซ็ตข้อมูลผู้เข้าร่วมวิจัย', '/user', [
+            'target_user_id' => $user->id,
+            'target_user_name' => $user->name,
+            'target_user_role' => $user->role,
+            'deleted_tables' => $summary,
+        ]);
+
+        return redirect()->route('user.index')->with('success', 'รีเซ็ตข้อมูลผู้เข้าร่วมวิจัยเรียบร้อยแล้ว');
     }
 
     public function my_profile_edit(Request $request)

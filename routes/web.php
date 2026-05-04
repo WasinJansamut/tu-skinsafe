@@ -21,9 +21,17 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/upload', [MobileMenuController::class, 'storeUpload'])->name('upload.store');
         Route::get('/library', [MobileMenuController::class, 'library'])->name('library');
         Route::get('/library/{id}', [MobileMenuController::class, 'libraryShow'])->name('library.show');
+        Route::get('/library/{id}/edit', [MobileMenuController::class, 'editLibrary'])->name('library.edit');
+        Route::patch('/library/{id}', [MobileMenuController::class, 'updateLibrary'])->name('library.update');
+        Route::delete('/library/{id}', [MobileMenuController::class, 'destroyLibrary'])->name('library.destroy');
         Route::get('/consent', [MobileMenuController::class, 'consent'])->name('consent');
+        Route::post('/consent', [MobileMenuController::class, 'storeConsent'])->name('consent.store');
+        Route::post('/consent/withdraw', [MobileMenuController::class, 'withdrawConsent'])->name('consent.withdraw');
         Route::get('/access', [MobileMenuController::class, 'access'])->name('access');
+        Route::post('/access', [MobileMenuController::class, 'storeAccess'])->name('access.store');
+        Route::post('/access/{id}/revoke', [MobileMenuController::class, 'revokeAccess'])->name('access.revoke');
         Route::get('/history', [MobileMenuController::class, 'history'])->name('history');
+        Route::get('/history/{id}', [MobileMenuController::class, 'showHistory'])->name('history.show');
         Route::get('/about', [MobileMenuController::class, 'about'])->name('about');
         Route::get('/status', [MobileMenuController::class, 'status'])->name('status');
         Route::get('/system-overview', [MobileMenuController::class, 'systemOverview'])->name('system_overview');
@@ -31,6 +39,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/evaluation', [MobileMenuController::class, 'evaluation'])->name('evaluation');
         Route::post('/evaluation', [MobileMenuController::class, 'submitEvaluation'])->name('evaluation.store');
         Route::get('/notifications', [MobileMenuController::class, 'notifications'])->name('notifications');
+        Route::post('/notifications/{id}/read', [MobileMenuController::class, 'markNotificationRead'])->name('notifications.read');
         Route::get('/shares', [MobileMenuController::class, 'shares'])->name('shares');
     });
 
@@ -53,6 +62,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/store', [UserController::class, 'store'])->name('user.store');
         Route::get('/edit/{id}', [UserController::class, 'edit'])->name('user.edit');
         Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
+        Route::post('/reset/{id}', [UserController::class, 'reset_participant_data'])->name('user.reset_participant_data');
         Route::delete('/soft_delete/{id}', [UserController::class, 'soft_delete'])->name('user.soft_delete');
         // Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');
         // Route::get('/restore/{id}', [UserController::class, 'restore'])->name('user.restore');

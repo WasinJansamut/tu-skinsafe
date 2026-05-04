@@ -643,14 +643,43 @@
 
                     const status = document.createElement('div');
                     status.className = 'preview-status';
-                    const analyzed = item.analysisState || { label: 'กำลังตรวจ...', className: 'is-loading' };
-                    status.textContent = analyzed.label;
-                    status.classList.add(analyzed.className);
+                    const analyzed = Object.prototype.hasOwnProperty.call(item, 'analysisState')
+                        ? item.analysisState
+                        : { label: 'กำลังตรวจ...', className: 'is-loading' };
+                    if (analyzed && analyzed.label) {
+                        status.textContent = analyzed.label;
+                        status.classList.add(analyzed.className);
+                        status.style.cursor = 'pointer';
+                        status.addEventListener('click', () => {
+                            const helpTitle = analyzed.label === 'ภาพมืดไป'
+                                ? 'ภาพมืดไป'
+                                : 'ภาพสว่างไป';
+                            const helpText = analyzed.label === 'ภาพมืดไป'
+                                ? 'ระบบตรวจความสว่างเฉลี่ยของพิกเซลจากภาพที่เลือก ถ้าค่าความสว่างเฉลี่ยต่ำกว่าช่วงที่กำหนด ภาพจะถูกจัดว่า "ภาพมืดไป"'
+                                : 'ระบบตรวจความสว่างเฉลี่ยของพิกเซลจากภาพที่เลือก ถ้าค่าความสว่างเฉลี่ยสูงกว่าช่วงที่กำหนด ภาพจะถูกจัดว่า "ภาพสว่างไป"';
+
+                            Swal.fire({
+                                icon: 'info',
+                                title: helpTitle,
+                                html: `
+                                    <div style="text-align:left; font-size:0.95rem; line-height:1.65;">
+                                        <div style="margin-bottom:10px;">${helpText}</div>
+                                        <div style="margin-bottom:10px;">คำนวณจากค่าเฉลี่ยความสว่างของพิกเซลในภาพพรีวิว</div>
+                                        <div style="margin-bottom:10px;">ถ้าค่าอยู่ในช่วงกลาง ระบบจะไม่แสดงข้อความเพิ่มเติม</div>
+                                    </div>
+                                `,
+                                confirmButtonText: 'เข้าใจแล้ว',
+                                width: 360,
+                            });
+                        });
+                    }
 
                     imageWrap.appendChild(img);
                     imageWrap.appendChild(remove);
                     wrap.appendChild(imageWrap);
-                    wrap.appendChild(status);
+                    if (analyzed && analyzed.label) {
+                        wrap.appendChild(status);
+                    }
                     previewGrid.appendChild(wrap);
                 });
             };
@@ -678,13 +707,13 @@
                         }
 
                         const avgBrightness = total / (imageData.length / 4);
-                        resolve(getBrightnessState(avgBrightness));
+                        resolve(getPreviewBrightnessState(avgBrightness));
                     };
 
                     image.onerror = () => resolve({
-                        key: 'good',
-                        label: 'ปกติ',
-                        className: 'is-good',
+                        key: 'unknown',
+                        label: null,
+                        className: null,
                     });
 
                     image.src = item.url;
@@ -705,7 +734,7 @@
                     };
                     capturedFiles.push(item);
                     analyzeImageFile(item).then((state) => {
-                        item.analysisState = state;
+                        item.analysisState = state ?? { label: null, className: null };
                         renderPreview();
                     });
                 });
@@ -747,7 +776,21 @@
                 }
             };
 
-            const getBrightnessState = (avg) => {
+            const getPreviewBrightnessState = (avg) => {
+                if (avg < 78) return {
+                    key: 'dim',
+                    label: 'ภาพมืดไป',
+                    className: 'is-dim'
+                };
+                if (avg > 185) return {
+                    key: 'bright',
+                    label: 'ภาพสว่างไป',
+                    className: 'is-bright'
+                };
+                return null;
+            };
+
+            const getCameraBrightnessState = (avg) => {
                 if (avg < 78) return {
                     key: 'dim',
                     label: 'ภาพมืดไป',
@@ -760,7 +803,7 @@
                 };
                 return {
                     key: 'good',
-                    label: 'ปกติ',
+                    label: 'ความสว่างภาพ : ปกติ',
                     className: 'is-good'
                 };
             };
@@ -787,11 +830,15 @@
                 }
 
                 const avgBrightness = total / (imageData.length / 4);
-                const state = getBrightnessState(avgBrightness);
+                const state = getCameraBrightnessState(avgBrightness);
 
-                cameraHint.textContent = state.label;
                 cameraHint.classList.remove('is-good', 'is-dim', 'is-bright');
-                cameraHint.classList.add(state.className);
+                if (state) {
+                    cameraHint.textContent = state.label;
+                    cameraHint.classList.add(state.className);
+                } else {
+                    cameraHint.textContent = '';
+                }
             };
 
             const startBrightnessMonitoring = () => {

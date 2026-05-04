@@ -514,6 +514,11 @@
             flex: 0 0 auto;
         }
 
+        .share-state.is-revoked {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
         .bottom-nav {
             position: fixed;
             left: 50%;
@@ -621,6 +626,7 @@
                 'color' => '#f07a1d',
                 'bg' => 'rgba(247, 190, 137, 0.24)',
                 'url' => route('app.consent'),
+                'done' => !empty($consentTaskCompleted),
             ],
             [
                 'title' => 'สิทธิ์การเข้าถึงข้อมูล',
@@ -628,6 +634,7 @@
                 'color' => '#7d52dd',
                 'bg' => 'rgba(169, 134, 240, 0.20)',
                 'url' => route('app.access'),
+                'done' => !empty($accessTaskCompleted) || !empty($shareStatus) || (($shareStatus ?? collect())->isNotEmpty()),
             ],
             [
                 'title' => 'ประวัติการเข้าถึงและการแจ้งเตือน',
@@ -635,6 +642,7 @@
                 'color' => '#e54f8a',
                 'bg' => 'rgba(243, 153, 184, 0.24)',
                 'url' => route('app.history'),
+                'done' => !empty($historyTaskCompleted),
             ],
             [
                 'title' => 'เกี่ยวกับผู้ทำวิจัย',
@@ -652,47 +660,8 @@
             'url' => route('app.evaluation'),
         ];
 
-        $notifications = [
-            [
-                'title' => 'นพ.วรชัย เข้าดูข้อมูลของคุณ',
-                'meta' => '10 นาทีที่แล้ว',
-                'icon' => 'fa-user-doctor',
-                'color' => '#3d4bd8',
-                'bg' => 'rgba(61, 75, 216, 0.12)',
-            ],
-            [
-                'title' => 'พญ.จันทร์ทิพย์ ขอแชร์ข้อมูล',
-                'meta' => '1 ชั่วโมงที่แล้ว',
-                'icon' => 'fa-share-from-square',
-                'color' => '#f08a24',
-                'bg' => 'rgba(240, 138, 36, 0.14)',
-            ],
-            [
-                'title' => 'การยินยอมการแชร์จะหมดอายุในอีก 7 วัน',
-                'meta' => '2 ชั่วโมงที่แล้ว',
-                'icon' => 'fa-triangle-exclamation',
-                'color' => '#c07a11',
-                'bg' => 'rgba(255, 200, 87, 0.20)',
-            ],
-        ];
-
-        $shareStatus = [
-            [
-                'title' => 'นพ.วรชัย แพทย์ผิวหนัง',
-                'meta' => 'แชร์เมื่อ 12 พ.ค. 2567',
-                'state' => 'กำลังแชร์',
-            ],
-            [
-                'title' => 'พญ.จันทร์ทิพย์ ผิวหนัง',
-                'meta' => 'แชร์เมื่อ 10 พ.ค. 2567',
-                'state' => 'กำลังแชร์',
-            ],
-            [
-                'title' => 'รศ.นพ.สมชาย ศัลยกรรมผิวหนัง',
-                'meta' => 'แชร์เมื่อ 08 พ.ค. 2567',
-                'state' => 'กำลังแชร์',
-            ],
-        ];
+        $notifications = $recentNotifications ?? collect();
+        $shareStatus = $recentShareStatus ?? collect();
     @endphp
 
     <div class="mobile-shell">
@@ -790,9 +759,9 @@
                 </div>
                 <i class="fa-solid fa-chevron-right text-muted fs-5"></i>
             </a>
-        @else
+        @elseif (!empty($evaluationReady))
             <a href="{{ $evaluationCard['url'] }}" class="menu-card menu-card--full mb-3">
-                <div class="menu-icon-wrap" style="background: rgba(148, 163, 184, 0.18); color: #6b7280">
+                <div class="menu-icon-wrap" style="background: rgba(84, 113, 255, 0.10); color: #4552d0">
                     <i class="fa-solid {{ $evaluationCard['icon'] }}"></i>
                 </div>
                 <div class="menu-copy">
@@ -801,48 +770,92 @@
                 </div>
                 <i class="fa-solid fa-chevron-right text-muted fs-5"></i>
             </a>
+        @else
+            <div class="menu-card menu-card--full mb-3" aria-disabled="true" style="cursor: not-allowed; opacity: 0.7;">
+                <div class="menu-icon-wrap" style="background: rgba(148, 163, 184, 0.18); color: #6b7280">
+                    <i class="fa-solid {{ $evaluationCard['icon'] }}"></i>
+                </div>
+                <div class="menu-copy">
+                    <p class="menu-title">{{ $evaluationCard['title'] }}</p>
+                    <p class="menu-lead">{{ $evaluationCard['lead'] }}</p>
+                    <span class="menu-status">
+                        <i class="fa-solid fa-circle-info"></i>
+                        กรุณาใช้งานระบบให้ครบทุกฟังก์ชั่น
+                    </span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-muted fs-5"></i>
+            </div>
+        @endif
+
+        @if (empty($evaluationReady))
+            <div class="page-card mb-3">
+                <div class="status-banner is-not-given mb-0">
+                    <div class="fw-bold mb-1">ยังไม่ครบทุกภารกิจ</div>
+                    <div>กรุณาใช้งานให้ครบทุกฟังก์ชันก่อนเริ่มประเมิน</div>
+                </div>
+            </div>
         @endif
 
         <div class="section-card mb-2">
             <div class="section-header">
-                <h2 class="section-title">การแจ้งเตือน <span class="text-muted small">(mockup)</span></h2>
+                <h2 class="section-title">การแจ้งเตือน</h2>
                 <a href="{{ route('app.notifications') }}" class="section-link">ดูทั้งหมด</a>
             </div>
 
-            @foreach ($notifications as $notification)
+            @forelse ($notifications as $notification)
                 <div class="notice-item">
-                    <div class="notice-badge" style="background: {{ $notification['bg'] }}; color: {{ $notification['color'] }}">
-                        <i class="fa-solid {{ $notification['icon'] }}"></i>
+                    <div class="notice-badge" style="background: {{ $notification->notification_bg ?? 'rgba(69, 82, 208, 0.12)' }}; color: {{ $notification->notification_color ?? '#4552d0' }}">
+                        <i class="fa-solid {{ $notification->notification_icon ?? 'fa-bell' }}"></i>
                     </div>
                     <div class="notice-body">
-                        <p class="notice-title">{{ $notification['title'] }}</p>
-                        <p class="notice-meta">{{ $notification['meta'] }}</p>
+                        <p class="notice-title">{{ $notification->notification_title ?? $notification->description ?? '-' }}</p>
+                        <p class="notice-meta">{{ $notification->notification_meta ?? $notification->created_at_text ?? '-' }}</p>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <div class="notice-item">
+                    <div class="notice-badge" style="background: rgba(148, 163, 184, 0.16); color: #64748b">
+                        <i class="fa-regular fa-bell"></i>
+                    </div>
+                    <div class="notice-body">
+                        <p class="notice-title">ยังไม่มีการแจ้งเตือน</p>
+                        <p class="notice-meta">ระบบจะแสดงเหตุการณ์ที่เกี่ยวข้องกับข้อมูลของคุณที่นี่</p>
+                    </div>
+                </div>
+            @endforelse
         </div>
 
         <div class="section-card mb-3">
             <div class="section-header">
-                <h2 class="section-title">สถานะการแชร์ข้อมูลล่าสุด <span class="text-muted small">(mockup)</span></h2>
+                <h2 class="section-title">สถานะการแชร์ข้อมูลล่าสุด</h2>
                 <a href="{{ route('app.shares') }}" class="section-link">ดูทั้งหมด</a>
             </div>
 
-            @foreach ($shareStatus as $share)
+            @forelse ($shareStatus as $share)
                 <div class="share-item">
                     <div class="share-badge" style="background: rgba(77, 87, 217, 0.10); color: #4552d0">
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="share-body">
-                        <p class="share-title">{{ $share['title'] }}</p>
-                        <p class="share-meta">{{ $share['meta'] }}</p>
+                        <p class="share-title">{{ $share->share_title ?? $share->grantee_name ?? '-' }}</p>
+                        <p class="share-meta">{{ $share->share_meta ?? $share->created_at_text ?? '-' }}</p>
                     </div>
-                    <div class="share-state">
+                    <div class="share-state {{ ($share->status ?? '') === 'active' ? 'is-active' : 'is-revoked' }}">
                         <i class="fa-solid fa-circle"></i>
-                        {{ $share['state'] }}
+                        {{ $share->share_state ?? '-' }}
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <div class="share-item">
+                    <div class="share-badge" style="background: rgba(148, 163, 184, 0.16); color: #64748b">
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+                    <div class="share-body">
+                        <p class="share-title">ยังไม่มีสถานะการแชร์ข้อมูล</p>
+                        <p class="share-meta">เมื่อมีการกำหนดสิทธิ์หรือยกเลิกสิทธิ์ ระบบจะแสดงที่นี่</p>
+                    </div>
+                </div>
+            @endforelse
         </div>
 
         <div class="page-spacer"></div>

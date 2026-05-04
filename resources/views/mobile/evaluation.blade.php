@@ -334,6 +334,25 @@
             border-radius: 14px;
             font-weight: 700;
         }
+
+        .permission-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+        }
+
+        .permission-row i {
+            color: #4552d0;
+        }
+
+        .permission-row span {
+            font-size: 0.87rem;
+            color: #334155;
+        }
     </style>
 @endsection
 
@@ -389,6 +408,51 @@
                 แบบประเมินนี้แบ่งเป็น 3 ส่วน ได้แก่ ข้อมูลทั่วไป, การประเมินการใช้งานระบบ และข้อเสนอแนะเพิ่มเติม
             </p>
         </div>
+
+        @if ($completed && !empty($evaluationResponse))
+            @php
+                $general = $evaluationResponse->general_answers ?? [];
+                $open = $evaluationResponse->open_answers ?? [];
+                $scaleAverage = $evaluationSummary['scale_average'] ?? null;
+            @endphp
+
+            <div class="page-card mb-3">
+                <div class="section-title">ผลการประเมินที่บันทึกแล้ว</div>
+
+                <div class="d-grid gap-2">
+                    <div class="permission-row">
+                        <i class="fa-solid fa-user"></i>
+                        <span>อายุ {{ $general['age'] ?? '-' }} ปี</span>
+                    </div>
+                    <div class="permission-row">
+                        <i class="fa-solid fa-venus-mars"></i>
+                        <span>เพศ {{ match ($general['gender'] ?? null) {
+                            'male' => 'ชาย',
+                            'female' => 'หญิง',
+                            'other' => ! empty($general['gender_other']) ? $general['gender_other'] : 'อื่นๆ',
+                            default => '-',
+                        } }}</span>
+                    </div>
+                    <div class="permission-row">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                        <span>ระดับการศึกษา {{ match ($general['education'] ?? null) {
+                            'below_bachelor' => 'ต่ำกว่าปริญญาตรี',
+                            'bachelor' => 'ปริญญาตรี',
+                            'higher' => 'สูงกว่าปริญญาตรี',
+                            default => '-',
+                        } }}</span>
+                    </div>
+                    <div class="permission-row">
+                        <i class="fa-solid fa-star"></i>
+                        <span>คะแนนเฉลี่ยแบบประเมิน {{ $scaleAverage !== null ? number_format($scaleAverage, 2) . ' / 5' : '-' }}</span>
+                    </div>
+                    <div class="permission-row">
+                        <i class="fa-solid fa-comment-dots"></i>
+                        <span>ข้อเสนอแนะที่บันทึกแล้ว {{ !empty($open['section3_4']) ? 'มี' : 'ไม่มี' }}</span>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <form id="evaluationForm" method="POST" action="{{ route('app.evaluation.store') }}">
             @csrf

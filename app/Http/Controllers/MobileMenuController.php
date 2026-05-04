@@ -17,6 +17,8 @@ class MobileMenuController extends Controller
     private const ACCESS_PAGE_TASK_KEY = 'access_page';
     private const HISTORY_PAGE_TASK_KEY = 'history_page';
     private const EVALUATION_FORM_TASK_KEY = 'evaluation_form';
+    private const CONSENT_RECORDS_TABLE = 'user_consent_records';
+    private const ACCESS_PERMISSIONS_TABLE = 'user_access_permissions';
 
     private function page(array $data)
     {
@@ -55,14 +57,454 @@ class MobileMenuController extends Controller
             return;
         }
 
-        DB::table('system_logs')->insert([
+        $payload = [
             'user_id' => $userId,
             'action_key' => $actionKey,
             'action_label' => $actionLabel,
             'page_path' => $pagePath,
             'details' => ! empty($details) ? json_encode($details, JSON_UNESCAPED_UNICODE) : null,
             'created_at' => now(),
-        ]);
+        ];
+
+        $actorName = auth()->user()?->name ?? null;
+        $actorRole = auth()->user()?->role ?? null;
+        $targetType = null;
+        $targetId = null;
+
+        foreach (['record_id', 'permission_id', 'target_id'] as $key) {
+            if (isset($details[$key])) {
+                $targetId = is_numeric($details[$key]) ? (int) $details[$key] : (string) $details[$key];
+                $targetType = match ($key) {
+                    'record_id' => 'skin_image_record',
+                    'permission_id' => 'access_permission',
+                    default => 'target',
+                };
+                break;
+            }
+        }
+
+        if (Schema::hasColumn('system_logs', 'actor_name')) {
+            $payload['actor_name'] = $actorName;
+        }
+
+        if (Schema::hasColumn('system_logs', 'actor_role')) {
+            $payload['actor_role'] = $actorRole;
+        }
+
+        if (Schema::hasColumn('system_logs', 'action_type')) {
+            $payload['action_type'] = $this->resolveActionType($actionKey);
+        }
+
+        if (Schema::hasColumn('system_logs', 'target_type')) {
+            $payload['target_type'] = $targetType;
+        }
+
+        if (Schema::hasColumn('system_logs', 'target_id')) {
+            $payload['target_id'] = $targetId;
+        }
+
+        if (Schema::hasColumn('system_logs', 'description')) {
+            $payload['description'] = $actionLabel;
+        }
+
+        if (Schema::hasColumn('system_logs', 'is_read')) {
+            $payload['is_read'] = 0;
+        }
+
+        DB::table('system_logs')->insert($payload);
+    }
+
+    private function resolveActionType(string $actionKey): string
+    {
+        return match ($actionKey) {
+            'view_upload_page', 'save_skin_image' => 'upload',
+            'edit_skin_image', 'update_skin_image', 'edit_access_permission', 'update_access_permission' => 'edit',
+            'delete_skin_image', 'soft_delete_skin_image', 'remove_skin_image' => 'delete',
+            'view_consent_page', 'user_gave_consent', 'user_withdrew_consent' => 'consent',
+            'user_added_access_permission' => 'share',
+            'view_access_page', 'view_skin_image_detail', 'view_library_page', 'view_system_overview', 'complete_system_overview', 'view_notifications_page' => 'access',
+            'user_revoked_access_permission' => 'revoke',
+            default => 'access',
+        };
+    }
+
+    private function getConsentRecord(?int $userId): ?object
+    {
+        if (! $userId || ! Schema::hasTable(self::CONSENT_RECORDS_TABLE)) {
+            return null;
+        }
+
+        return DB::table(self::CONSENT_RECORDS_TABLE)
+            ->where('user_id', $userId)
+            ->first();
+    }
+
+    private function formatConsentDate(?string $value): ?string
+    {
+        return $value ? \Illuminate\Support\Carbon::parse($value)->addYears(543)->format('d/m/y H:i') : null;
+    }
+
+    private function markConsentTaskCompleted(int $userId): void
+    {
+        $this->recordTaskCompletion($userId, self::CONSENT_PAGE_TASK_KEY);
+    }
+
+    private function revokeActiveSharesIfAny(int $userId): void
+    {
+        $tablesToCheck = [
+            'user_access_permissions',
+            'user_share_permissions',
+            'user_data_shares',
+            'skin_image_shares',
+        ];
+
+        foreach ($tablesToCheck as $table) {
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
+            $columns = Schema::getColumnListing($table);
+
+            if (! in_array('user_id', $columns, true)) {
+                continue;
+            }
+
+            if (in_array('is_active', $columns, true)) {
+                DB::table($table)
+                    ->where('user_id', $userId)
+                    ->where('is_active', 1)
+                    ->update([
+                        'is_active' => 0,
+                        'updated_at' => now(),
+                    ]);
+                continue;
+            }
+
+            if (in_array('status', $columns, true)) {
+                DB::table($table)
+                    ->where('user_id', $userId)
+                    ->whereIn('status', ['active', 'shared', 'granted'])
+                    ->update([
+                        'status' => 'revoked',
+                        'updated_at' => now(),
+                    ]);
+
+                if ($table === self::ACCESS_PERMISSIONS_TABLE && in_array('revoked_at', $columns, true)) {
+                    DB::table($table)
+                        ->where('user_id', $userId)
+                        ->where('status', 'revoked')
+                        ->whereNull('revoked_at')
+                        ->update([
+                            'revoked_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                }
+            }
+        }
+    }
+
+    private function revokeSharesForRecordIfAny(int $userId, int $recordId): void
+    {
+        if (! Schema::hasTable(self::ACCESS_PERMISSIONS_TABLE)) {
+            return;
+        }
+
+        $columns = Schema::getColumnListing(self::ACCESS_PERMISSIONS_TABLE);
+        if (! in_array('image_id', $columns, true)) {
+            return;
+        }
+
+        $update = ['status' => 'revoked'];
+        if (in_array('revoked_at', $columns, true)) {
+            $update['revoked_at'] = now();
+        }
+        if (in_array('updated_at', $columns, true)) {
+            $update['updated_at'] = now();
+        }
+
+        DB::table(self::ACCESS_PERMISSIONS_TABLE)
+            ->where('user_id', $userId)
+            ->where('image_id', $recordId)
+            ->where('status', 'active')
+            ->update($update);
+    }
+
+    private function getAccessPermissions(int $userId)
+    {
+        if (! Schema::hasTable(self::ACCESS_PERMISSIONS_TABLE)) {
+            return collect();
+        }
+
+        return DB::table(self::ACCESS_PERMISSIONS_TABLE)
+            ->leftJoin('skin_image_records', 'user_access_permissions.image_id', '=', 'skin_image_records.id')
+            ->where('user_access_permissions.user_id', $userId)
+            ->orderByDesc('user_access_permissions.permission_id')
+            ->select([
+                'user_access_permissions.permission_id as id',
+                'user_access_permissions.permission_id',
+                'user_access_permissions.user_id',
+                'user_access_permissions.image_id',
+                'user_access_permissions.image_group_id',
+                'user_access_permissions.grantee_name',
+                'user_access_permissions.grantee_role',
+                'user_access_permissions.permission_level',
+                'user_access_permissions.purpose',
+                'user_access_permissions.status',
+                'user_access_permissions.created_at',
+                'user_access_permissions.revoked_at',
+                'user_access_permissions.updated_at',
+                'skin_image_records.primary_image_path as image_primary_path',
+                'skin_image_records.image_paths as image_paths_json',
+                'skin_image_records.image_count as image_count',
+                'skin_image_records.created_at as image_created_at',
+            ])
+            ->get()
+            ->map(function ($permission) {
+                $paths = json_decode($permission->image_paths_json ?? '[]', true) ?: [];
+
+                $permission->image_label = $permission->image_group_id
+                    ? 'ชุดข้อมูล #' . $permission->image_group_id
+                    : ($permission->image_id ? 'ภาพ #' . $permission->image_id : '-');
+                $permission->grantee_role_label = $this->formatRoleLabel($permission->grantee_role ?? null);
+                $permission->status_label = $permission->status === 'active' ? 'active' : 'revoked';
+                $permission->permission_level_label = $permission->permission_level === 'view_only'
+                    ? 'View Only'
+                    : (string) ($permission->permission_level ?? '-');
+                $permission->image_total = (int) ($permission->image_count ?? count($paths));
+                $permission->image_thumbnail = ! empty($permission->image_primary_path)
+                    ? Storage::url($permission->image_primary_path)
+                    : (! empty($paths[0]) ? Storage::url($paths[0]) : null);
+                $permission->created_at_text = ! empty($permission->created_at)
+                    ? \Illuminate\Support\Carbon::parse($permission->created_at)->addYears(543)->format('d/m/y H:i')
+                    : '-';
+                $permission->revoked_at_text = ! empty($permission->revoked_at)
+                    ? \Illuminate\Support\Carbon::parse($permission->revoked_at)->addYears(543)->format('d/m/y H:i')
+                    : null;
+
+                return $permission;
+            });
+    }
+
+    private function getRecordActivityLogs(int $userId, int $recordId)
+    {
+        if (! Schema::hasTable('system_logs')) {
+            return collect();
+        }
+
+        $query = DB::table('system_logs')
+            ->where('user_id', $userId)
+            ->orderByDesc('id');
+
+        if (Schema::hasColumn('system_logs', 'target_type') && Schema::hasColumn('system_logs', 'target_id')) {
+            $query->where('target_type', 'skin_image_record')->where('target_id', $recordId);
+        } elseif (Schema::hasColumn('system_logs', 'details')) {
+            $query->where(function ($nested) use ($recordId) {
+                $nested->where('details', 'like', '%"record_id":' . $recordId . '%')
+                    ->orWhere('details', 'like', '%"target_id":' . $recordId . '%');
+            });
+        }
+
+        if (Schema::hasColumn('system_logs', 'action_type')) {
+            $query->select('*');
+        }
+
+        return $query->limit(5)->get()->map(fn ($log) => $this->prepareActivityLog($log));
+    }
+
+    private function getImageShareSummary(int $userId, int $recordId): array
+    {
+        if (! Schema::hasTable(self::ACCESS_PERMISSIONS_TABLE)) {
+            return [
+                'label' => 'ยังไม่แชร์',
+                'class' => 'is-warning',
+                'active_count' => 0,
+                'total_count' => 0,
+            ];
+        }
+
+        $permissions = DB::table(self::ACCESS_PERMISSIONS_TABLE)
+            ->where('user_id', $userId)
+            ->where('image_id', $recordId)
+            ->get(['status']);
+
+        $totalCount = $permissions->count();
+        $activeCount = $permissions->where('status', 'active')->count();
+
+        return [
+            'label' => $activeCount > 0 ? 'แชร์แล้ว' : 'ยังไม่แชร์',
+            'class' => $activeCount > 0 ? 'is-shared' : 'is-warning',
+            'active_count' => $activeCount,
+            'total_count' => $totalCount,
+        ];
+    }
+
+    private function getImageShareSummaryMap(int $userId): array
+    {
+        if (! Schema::hasTable(self::ACCESS_PERMISSIONS_TABLE)) {
+            return [];
+        }
+
+        $summary = [];
+
+        DB::table(self::ACCESS_PERMISSIONS_TABLE)
+            ->where('user_id', $userId)
+            ->whereNotNull('image_id')
+            ->get(['image_id', 'status'])
+            ->each(function ($permission) use (&$summary) {
+                $imageId = (int) $permission->image_id;
+                if (! isset($summary[$imageId])) {
+                    $summary[$imageId] = [
+                        'label' => 'ยังไม่แชร์',
+                        'class' => 'is-warning',
+                        'active_count' => 0,
+                        'total_count' => 0,
+                    ];
+                }
+
+                $summary[$imageId]['total_count']++;
+                if (($permission->status ?? null) === 'active') {
+                    $summary[$imageId]['active_count']++;
+                }
+            });
+
+        foreach ($summary as $imageId => $item) {
+            $summary[$imageId]['label'] = $item['active_count'] > 0 ? 'แชร์แล้ว' : 'ยังไม่แชร์';
+            $summary[$imageId]['class'] = $item['active_count'] > 0 ? 'is-shared' : 'is-warning';
+        }
+
+        return $summary;
+    }
+
+    private function formatRoleLabel(?string $role): string
+    {
+        return match ($role) {
+            'doctor' => 'แพทย์',
+            'researcher' => 'นักวิจัย',
+            'other' => 'อื่น ๆ',
+            default => '-',
+        };
+    }
+
+    private function markAccessTaskCompleted(int $userId): void
+    {
+        $this->recordTaskCompletion($userId, self::ACCESS_PAGE_TASK_KEY);
+    }
+
+    private function activityTypeLabels(): array
+    {
+        return [
+            'upload' => 'Upload',
+            'edit' => 'Edit',
+            'delete' => 'Delete',
+            'consent' => 'Consent',
+            'share' => 'Share',
+            'access' => 'Access',
+            'revoke' => 'Revoke',
+        ];
+    }
+
+    private function activityActionKeysByType(string $type): array
+    {
+        return match ($type) {
+            'upload' => ['view_upload_page', 'save_skin_image'],
+            'edit' => ['edit_skin_image', 'update_skin_image', 'edit_access_permission', 'update_access_permission'],
+            'delete' => ['delete_skin_image', 'soft_delete_skin_image', 'remove_skin_image'],
+            'consent' => ['view_consent_page', 'user_gave_consent', 'user_withdrew_consent'],
+            'share' => ['user_added_access_permission'],
+            'access' => ['view_access_page', 'view_skin_image_detail', 'view_library_page', 'view_system_overview', 'complete_system_overview', 'view_notifications_page'],
+            'revoke' => ['user_revoked_access_permission'],
+            default => [],
+        };
+    }
+
+    private function activityLogLabel(string $actionKey, ?array $details = null): string
+    {
+        return match ($actionKey) {
+            'view_upload_page' => 'เปิดหน้าถ่าย/อัปโหลดภาพ',
+            'save_skin_image' => 'คุณได้บันทึกภาพใหม่',
+            'view_system_overview' => 'เปิดหน้าแนะนำภาพรวมของระบบต้นแบบ',
+            'complete_system_overview' => 'รับทราบและบันทึกขั้นแนะนำภาพรวมของระบบต้นแบบ',
+            'view_consent_page' => 'เปิดหน้าการยินยอมและการแชร์ข้อมูล',
+            'user_gave_consent' => 'คุณได้ให้ความยินยอมในการใช้ข้อมูล',
+            'user_withdrew_consent' => 'คุณได้ถอนความยินยอม',
+            'view_access_page' => 'เปิดหน้าสิทธิ์การเข้าถึงข้อมูล',
+            'user_added_access_permission' => 'คุณได้แชร์ภาพให้แพทย์',
+            'user_revoked_access_permission' => 'คุณได้ยกเลิกสิทธิ์การเข้าถึง',
+            'view_library_page' => 'เปิดหน้าคลังภาพของฉัน',
+            'view_skin_image_detail' => 'เปิดดูรายละเอียดรายการภาพ',
+            'view_history_page' => 'เปิดหน้าประวัติการเข้าถึงและการแจ้งเตือน',
+            default => $actionKey,
+        };
+    }
+
+    private function prepareActivityLog(object $log): object
+    {
+        $details = [];
+        if (! empty($log->details)) {
+            $decoded = json_decode((string) $log->details, true);
+            $details = is_array($decoded) ? $decoded : [];
+        }
+
+        $log->details_array = $details;
+        $log->actor_name = $log->actor_name ?? auth()->user()?->name ?? '-';
+        $log->actor_role = $log->actor_role ?? auth()->user()?->role ?? '-';
+        $log->action_type = $log->action_type ?? $this->resolveActionType($log->action_key ?? '');
+        $log->description = $log->description ?? $log->action_label ?? $this->activityLogLabel($log->action_key ?? '', $details);
+        $targetType = $log->target_type ?? ($details['target_type'] ?? null);
+        if (! $targetType && (isset($details['record_id']) || isset($details['permission_id']) || isset($details['target_id']))) {
+            $targetType = 'target';
+        }
+        $log->target_type = $targetType;
+        $log->target_id = $log->target_id ?? $details['record_id'] ?? $details['permission_id'] ?? $details['target_id'] ?? null;
+        $log->target_label = match ($log->target_type) {
+            'skin_image_record' => $log->target_id ? 'ภาพ #' . $log->target_id : 'ภาพ',
+            'access_permission' => $log->target_id ? 'สิทธิ์ #' . $log->target_id : 'สิทธิ์',
+            default => $log->target_id ? 'รายการ #' . $log->target_id : null,
+        };
+        $log->is_read = (bool) ($log->is_read ?? 0);
+        $log->created_at_text = ! empty($log->created_at)
+            ? \Illuminate\Support\Carbon::parse($log->created_at)->addYears(543)->format('d/m/y H:i')
+            : '-';
+
+        return $log;
+    }
+
+    private function buildActivityLogsQuery(int $userId)
+    {
+        $query = DB::table('system_logs')
+            ->where('user_id', $userId)
+            ->orderByDesc('id');
+
+        if (Schema::hasColumn('system_logs', 'action_type')) {
+            $query->select('*');
+        } else {
+            $query->select([
+                'id',
+                'user_id',
+                'action_key',
+                'action_label',
+                'page_path',
+                'details',
+                'created_at',
+            ]);
+        }
+
+        return $query;
+    }
+
+    private function activityNotificationActionKeys(): array
+    {
+        return [
+            'user_gave_consent',
+            'user_withdrew_consent',
+            'user_added_access_permission',
+            'user_revoked_access_permission',
+            'save_skin_image',
+            'delete_skin_image',
+            'soft_delete_skin_image',
+            'remove_skin_image',
+            'view_skin_image_detail',
+        ];
     }
 
     public function upload()
@@ -83,10 +525,14 @@ class MobileMenuController extends Controller
     {
         $user = auth()->user();
         $records = collect();
+        $shareSummaryMap = $this->getImageShareSummaryMap($user->id);
 
         if (Schema::hasTable('skin_image_records')) {
             $records = DB::table('skin_image_records')
                 ->where('user_id', $user->id)
+                ->when(Schema::hasColumn('skin_image_records', 'deleted_at'), function ($query) {
+                    $query->whereNull('deleted_at');
+                })
                 ->orderByDesc('id')
                 ->get()
                 ->map(function ($record) {
@@ -100,6 +546,10 @@ class MobileMenuController extends Controller
                         ? \Illuminate\Support\Carbon::parse($record->created_at)->addYears(543)->format('d/m/y H:i')
                         : '-';
                     $record->paths = $paths;
+                    $record->share_status_label = $shareSummaryMap[$record->id]['label'] ?? 'ยังไม่แชร์';
+                    $record->share_status_class = $shareSummaryMap[$record->id]['class'] ?? 'is-warning';
+                    $record->share_active_count = $shareSummaryMap[$record->id]['active_count'] ?? 0;
+                    $record->share_total_count = $shareSummaryMap[$record->id]['total_count'] ?? 0;
 
                     return $record;
                 });
@@ -124,6 +574,9 @@ class MobileMenuController extends Controller
         $record = DB::table('skin_image_records')
             ->where('id', $id)
             ->where('user_id', $user->id)
+            ->when(Schema::hasColumn('skin_image_records', 'deleted_at'), function ($query) {
+                $query->whereNull('deleted_at');
+            })
             ->first();
 
         if (! $record) {
@@ -142,79 +595,550 @@ class MobileMenuController extends Controller
         $record->updated_at_text = ! empty($record->updated_at)
             ? \Illuminate\Support\Carbon::parse($record->updated_at)->addYears(543)->format('d/m/y H:i')
             : '-';
+        $shareSummary = $this->getImageShareSummary($user->id, (int) $record->id);
+        $record->share_status_label = $shareSummary['label'];
+        $record->share_status_class = $shareSummary['class'];
+        $record->share_active_count = $shareSummary['active_count'];
+        $record->share_total_count = $shareSummary['total_count'];
 
         $this->writeLog($user->id, 'view_skin_image_detail', 'เปิดดูรายละเอียดรายการภาพผิวหนัง', '/app/library/' . $record->id, [
             'record_id' => $record->id,
         ]);
         $this->recordTaskCompletion($user->id, self::LIBRARY_DETAIL_TASK_KEY);
+        $recordLogs = $this->getRecordActivityLogs($user->id, (int) $record->id);
 
         return view('mobile.library_show', [
             'page_title' => 'รายละเอียดรายการภาพ',
             'record' => $record,
+            'recordLogs' => $recordLogs,
         ]);
+    }
+
+    public function editLibrary(int $id)
+    {
+        $user = auth()->user();
+
+        if (! Schema::hasTable('skin_image_records')) {
+            abort(404);
+        }
+
+        $record = DB::table('skin_image_records')
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->when(Schema::hasColumn('skin_image_records', 'deleted_at'), function ($query) {
+                $query->whereNull('deleted_at');
+            })
+            ->first();
+
+        if (! $record) {
+            abort(404);
+        }
+
+        $paths = json_decode($record->image_paths ?? '[]', true) ?: [];
+        $record->paths = $paths;
+        $record->thumbnail_url = ! empty($record->primary_image_path)
+            ? Storage::url($record->primary_image_path)
+            : (! empty($paths[0]) ? Storage::url($paths[0]) : null);
+        $record->created_at_text = ! empty($record->created_at)
+            ? \Illuminate\Support\Carbon::parse($record->created_at)->addYears(543)->format('d/m/y H:i')
+            : '-';
+        $record->updated_at_text = ! empty($record->updated_at)
+            ? \Illuminate\Support\Carbon::parse($record->updated_at)->addYears(543)->format('d/m/y H:i')
+            : '-';
+        $shareSummary = $this->getImageShareSummary($user->id, (int) $record->id);
+        $record->share_status_label = $shareSummary['label'];
+        $record->share_status_class = $shareSummary['class'];
+        $record->share_active_count = $shareSummary['active_count'];
+
+        $this->writeLog($user->id, 'edit_skin_image', 'เปิดหน้าแก้ไขข้อมูลภาพ', '/app/library/' . $record->id . '/edit', [
+            'record_id' => $record->id,
+        ]);
+
+        return view('mobile.library_edit', [
+            'page_title' => 'แก้ไขข้อมูลภาพ',
+            'record' => $record,
+        ]);
+    }
+
+    public function updateLibrary(Request $request, int $id)
+    {
+        $user = $request->user();
+
+        if (! Schema::hasTable('skin_image_records')) {
+            abort(404);
+        }
+
+        $record = DB::table('skin_image_records')
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->when(Schema::hasColumn('skin_image_records', 'deleted_at'), function ($query) {
+                $query->whereNull('deleted_at');
+            })
+            ->first();
+
+        if (! $record) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'symptoms' => ['required', 'string', 'max:255'],
+            'location' => ['required', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        DB::table('skin_image_records')
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->update([
+                'symptoms' => $validated['symptoms'],
+                'location' => $validated['location'],
+                'notes' => $validated['notes'] ?? null,
+                'updated_at' => now(),
+            ]);
+
+        $this->writeLog($user->id, 'edit_skin_image', 'ผู้ใช้แก้ไขข้อมูลภาพ', '/app/library/' . $id . '/edit', [
+            'record_id' => $id,
+        ]);
+
+        return redirect()
+            ->route('app.library.show', $id)
+            ->with('success', 'แก้ไขข้อมูลภาพเรียบร้อยแล้ว');
+    }
+
+    public function destroyLibrary(Request $request, int $id)
+    {
+        $user = $request->user();
+
+        if (! Schema::hasTable('skin_image_records')) {
+            abort(404);
+        }
+
+        $record = DB::table('skin_image_records')
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->when(Schema::hasColumn('skin_image_records', 'deleted_at'), function ($query) {
+                $query->whereNull('deleted_at');
+            })
+            ->first();
+
+        if (! $record) {
+            abort(404);
+        }
+
+        $shareSummary = $this->getImageShareSummary($user->id, (int) $id);
+
+        $update = [];
+        if (Schema::hasColumn('skin_image_records', 'deleted_at')) {
+            $update['deleted_at'] = now();
+        } elseif (Schema::hasColumn('skin_image_records', 'is_deleted')) {
+            $update['is_deleted'] = 1;
+        } elseif (Schema::hasColumn('skin_image_records', 'status')) {
+            $update['status'] = 'deleted';
+        } else {
+            abort(500, 'ยังไม่ได้เตรียมฟิลด์สำหรับลบภาพแบบ soft delete');
+        }
+
+        $update['updated_at'] = now();
+
+        DB::table('skin_image_records')
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->update($update);
+
+        if ($shareSummary['active_count'] > 0) {
+            $this->revokeSharesForRecordIfAny($user->id, $id);
+        }
+
+        $this->writeLog($user->id, 'delete_skin_image', 'ผู้ใช้ลบภาพ', '/app/library/' . $id, [
+            'record_id' => $id,
+            'shared_before_delete' => $shareSummary['active_count'] > 0 ? 1 : 0,
+        ]);
+
+        return redirect()
+            ->route('app.library')
+            ->with('success', 'ลบภาพเรียบร้อยแล้ว');
     }
 
     public function consent()
     {
         $user = auth()->user();
+        $consentRecord = $this->getConsentRecord($user->id);
         $this->writeLog($user->id, 'view_consent_page', 'เปิดหน้าการยินยอมและการแชร์ข้อมูล', '/app/consent');
-        $this->recordTaskCompletion($user->id, self::CONSENT_PAGE_TASK_KEY);
+        $this->markConsentTaskCompleted($user->id);
 
-        return $this->page([
+        $status = 'not_given';
+        if ($consentRecord?->consent_status === 'consented') {
+            $status = 'consented';
+        } elseif ($consentRecord?->consent_status === 'withdrawn') {
+            $status = 'withdrawn';
+        }
+
+        return view('mobile.consent', [
             'page_title' => 'การยินยอมและการแชร์ข้อมูล',
-            'page_icon' => 'fa-user-group',
-            'page_subtitle' => 'จัดการความยินยอมและผู้ที่เข้าถึงข้อมูลได้',
-            'hero_title' => 'การยินยอมและการแชร์ข้อมูล',
-            'hero_text' => 'ผู้เข้าร่วมสามารถเปิดหรือปิดการแชร์ข้อมูลตามเงื่อนไขของโครงการ',
-            'primary_label' => 'จัดการการยินยอม',
-            'items' => [
-                ['title' => 'สถานะความยินยอม', 'meta' => 'อนุญาตให้ใช้ข้อมูลเพื่อการวิจัย'],
-                ['title' => 'การแชร์ข้อมูล', 'meta' => 'เลือกผู้รับข้อมูลได้เป็นรายคน'],
-                ['title' => 'ประวัติการเปลี่ยนแปลง', 'meta' => 'ตรวจสอบย้อนหลังได้ทุกครั้ง'],
-            ],
+            'consentRecord' => $consentRecord,
+            'consentStatus' => $status,
+            'consentGivenAtText' => $this->formatConsentDate($consentRecord?->consent_given_at ?? null),
+            'consentWithdrawnAtText' => $this->formatConsentDate($consentRecord?->consent_withdrawn_at ?? null),
         ]);
+    }
+
+    public function storeConsent(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'consent_storage' => ['accepted'],
+            'consent_treatment' => ['accepted'],
+            'consent_doctor' => ['accepted'],
+            'consent_research' => ['nullable'],
+            'consent_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if (! Schema::hasTable(self::CONSENT_RECORDS_TABLE)) {
+            abort(500, 'ยังไม่ได้สร้างตาราง user_consent_records');
+        }
+
+        DB::table(self::CONSENT_RECORDS_TABLE)->updateOrInsert(
+            ['user_id' => $user->id],
+            [
+                'consent_storage' => 1,
+                'consent_treatment' => 1,
+                'consent_research' => $request->boolean('consent_research') ? 1 : 0,
+                'consent_status' => 'consented',
+                'consent_given_at' => now(),
+                'consent_withdrawn_at' => null,
+                'consent_note' => $validated['consent_note'] ?? null,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        $this->markConsentTaskCompleted($user->id);
+        $this->writeLog($user->id, 'user_gave_consent', 'ผู้ใช้ให้ความยินยอม', '/app/consent', [
+            'consent_storage' => 1,
+            'consent_treatment' => 1,
+            'consent_research' => $request->boolean('consent_research') ? 1 : 0,
+        ]);
+
+        return redirect()
+            ->route('app.consent')
+            ->with('success', 'บันทึกความยินยอมเรียบร้อยแล้ว');
+    }
+
+    public function withdrawConsent(Request $request)
+    {
+        $user = $request->user();
+
+        if (! Schema::hasTable(self::CONSENT_RECORDS_TABLE)) {
+            abort(500, 'ยังไม่ได้สร้างตาราง user_consent_records');
+        }
+
+        $existing = $this->getConsentRecord($user->id);
+
+        DB::table(self::CONSENT_RECORDS_TABLE)->updateOrInsert(
+            ['user_id' => $user->id],
+            [
+                'consent_storage' => $existing?->consent_storage ?? 0,
+                'consent_treatment' => $existing?->consent_treatment ?? 0,
+                'consent_research' => $existing?->consent_research ?? 0,
+                'consent_status' => 'withdrawn',
+                'consent_given_at' => $existing?->consent_given_at ?? null,
+                'consent_withdrawn_at' => now(),
+                'consent_note' => $request->input('consent_note', $existing?->consent_note),
+                'updated_at' => now(),
+                'created_at' => $existing?->created_at ?? now(),
+            ]
+        );
+
+        $this->revokeActiveSharesIfAny($user->id);
+        $this->markConsentTaskCompleted($user->id);
+        $this->writeLog($user->id, 'user_withdrew_consent', 'ผู้ใช้ถอนความยินยอม', '/app/consent');
+
+        return redirect()
+            ->route('app.consent')
+            ->with('success', 'ถอนความยินยอมเรียบร้อยแล้ว');
     }
 
     public function access()
     {
         $user = auth()->user();
-        $this->writeLog($user->id, 'view_access_page', 'เปิดหน้าสิทธิ์การเข้าถึงข้อมูล', '/app/access');
-        $this->recordTaskCompletion($user->id, self::ACCESS_PAGE_TASK_KEY);
+        $permissions = $this->getAccessPermissions($user->id);
 
-        return $this->page([
+        $this->writeLog($user->id, 'view_access_page', 'เปิดหน้าสิทธิ์การเข้าถึงข้อมูล', '/app/access');
+
+        $currentConsent = $this->getConsentRecord($user->id);
+        $consentStatus = $currentConsent?->consent_status ?? 'not_given';
+
+        $selectedPurpose = request()->query('purpose', 'doctor');
+        if (! in_array($selectedPurpose, ['doctor', 'research'], true)) {
+            $selectedPurpose = 'doctor';
+        }
+
+        $availableImages = collect();
+        if (Schema::hasTable('skin_image_records')) {
+            $availableImages = DB::table('skin_image_records')
+                ->where('user_id', $user->id)
+                ->when(Schema::hasColumn('skin_image_records', 'deleted_at'), function ($query) {
+                    $query->whereNull('deleted_at');
+                })
+                ->orderByDesc('id')
+                ->get()
+                ->map(function ($record) {
+                    $paths = json_decode($record->image_paths ?? '[]', true) ?: [];
+                    $record->display_label = 'ภาพ #' . $record->id
+                        . (! empty($record->symptoms) ? ' - ' . $record->symptoms : '');
+                    $record->created_at_text = ! empty($record->created_at)
+                        ? \Illuminate\Support\Carbon::parse($record->created_at)->addYears(543)->format('d/m/y H:i')
+                        : '-';
+                    $record->thumbnail_url = ! empty($record->primary_image_path)
+                        ? Storage::url($record->primary_image_path)
+                        : (! empty($paths[0]) ? Storage::url($paths[0]) : null);
+                    return $record;
+                });
+        }
+
+        return view('mobile.access', [
             'page_title' => 'สิทธิ์การเข้าถึงข้อมูล',
-            'page_icon' => 'fa-lock',
-            'page_subtitle' => 'ควบคุมสิทธิ์การเปิดดูและใช้งานข้อมูล',
-            'hero_title' => 'สิทธิ์การเข้าถึงข้อมูล',
-            'hero_text' => 'กำหนดผู้มีสิทธิ์เข้าถึงข้อมูลและระดับการใช้งานของแต่ละคน',
-            'primary_label' => 'ตั้งค่าสิทธิ์',
-            'items' => [
-                ['title' => 'สิทธิ์พื้นฐาน', 'meta' => 'เจ้าของข้อมูลและทีมวิจัยหลัก'],
-                ['title' => 'สิทธิ์เพิ่มเติม', 'meta' => 'เพิ่มผู้ชมข้อมูลแบบเฉพาะกิจได้'],
-                ['title' => 'ตรวจสอบสิทธิ์', 'meta' => 'ทบทวนสิทธิ์ทั้งหมดก่อนเผยแพร่'],
-            ],
+            'consentStatus' => $consentStatus,
+            'currentConsent' => $currentConsent,
+            'permissions' => $permissions,
+            'availableImages' => $availableImages,
+            'selectedPurpose' => $selectedPurpose,
         ]);
     }
 
-    public function history()
+    public function storeAccess(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'image_id' => ['required', 'integer'],
+            'grantee_name' => ['required', 'string', 'max:255'],
+            'grantee_role' => ['required', 'in:doctor,researcher,other'],
+            'purpose' => ['required', 'string', 'max:500'],
+            'permission_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $consentRecord = $this->getConsentRecord($user->id);
+        if (! $consentRecord || $consentRecord->consent_status !== 'consented') {
+            return redirect()
+                ->route('app.access')
+                ->with('error', 'กรุณาให้ความยินยอมก่อนกำหนดสิทธิ์การเข้าถึงข้อมูล');
+        }
+
+        if (! Schema::hasTable(self::ACCESS_PERMISSIONS_TABLE)) {
+            abort(500, 'ยังไม่ได้สร้างตาราง user_access_permissions');
+        }
+
+        if (! Schema::hasTable('skin_image_records')) {
+            abort(500, 'ยังไม่ได้สร้างตาราง skin_image_records');
+        }
+
+        $recordExists = DB::table('skin_image_records')
+            ->where('id', $validated['image_id'])
+            ->where('user_id', $user->id)
+            ->when(Schema::hasColumn('skin_image_records', 'deleted_at'), function ($query) {
+                $query->whereNull('deleted_at');
+            })
+            ->exists();
+
+        if (! $recordExists) {
+            return redirect()
+                ->route('app.access')
+                ->with('error', 'ไม่พบภาพที่เลือก หรือไม่ใช่รายการของคุณ');
+        }
+
+        DB::table(self::ACCESS_PERMISSIONS_TABLE)->insert([
+            'user_id' => $user->id,
+            'image_id' => $validated['image_id'],
+            'image_group_id' => null,
+            'grantee_name' => $validated['grantee_name'],
+            'grantee_role' => $validated['grantee_role'],
+            'permission_level' => 'view_only',
+            'purpose' => $validated['purpose'],
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->markAccessTaskCompleted($user->id);
+        $this->writeLog($user->id, 'user_added_access_permission', 'ผู้ใช้กำหนดสิทธิ์การเข้าถึง', '/app/access', [
+            'image_id' => (int) $validated['image_id'],
+            'grantee_name' => $validated['grantee_name'],
+            'grantee_role' => $validated['grantee_role'],
+            'permission_level' => 'view_only',
+        ]);
+
+        return redirect()
+            ->route('app.access')
+            ->with('success', 'บันทึกสิทธิ์การเข้าถึงเรียบร้อยแล้ว');
+    }
+
+    public function revokeAccess(Request $request, int $id)
+    {
+        $user = $request->user();
+
+        if (! Schema::hasTable(self::ACCESS_PERMISSIONS_TABLE)) {
+            abort(500, 'ยังไม่ได้สร้างตาราง user_access_permissions');
+        }
+
+        $permission = DB::table(self::ACCESS_PERMISSIONS_TABLE)
+            ->where('permission_id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $permission) {
+            abort(404);
+        }
+
+        DB::table(self::ACCESS_PERMISSIONS_TABLE)
+            ->where('permission_id', $id)
+            ->where('user_id', $user->id)
+            ->update([
+                'status' => 'revoked',
+                'revoked_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        $this->markAccessTaskCompleted($user->id);
+        $this->writeLog($user->id, 'user_revoked_access_permission', 'ผู้ใช้ยกเลิกสิทธิ์การเข้าถึง', '/app/access', [
+            'permission_id' => $id,
+        ]);
+
+        return redirect()
+            ->route('app.access')
+            ->with('success', 'ยกเลิกสิทธิ์เรียบร้อยแล้ว');
+    }
+
+    public function history(Request $request)
     {
         $user = auth()->user();
         $this->writeLog($user->id, 'view_history_page', 'เปิดหน้าประวัติการเข้าถึงและการแจ้งเตือน', '/app/history');
         $this->recordTaskCompletion($user->id, self::HISTORY_PAGE_TASK_KEY);
 
-        return $this->page([
+        $filter = (string) $request->query('filter', 'all');
+        $from = $request->query('from');
+        $to = $request->query('to');
+        $allowedFilters = array_keys($this->activityTypeLabels());
+        if (! in_array($filter, array_merge(['all'], $allowedFilters), true)) {
+            $filter = 'all';
+        }
+
+        $query = $this->buildActivityLogsQuery($user->id);
+
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        if ($filter !== 'all') {
+            $query->whereIn('action_key', $this->activityActionKeysByType($filter));
+        }
+
+        $unreadCountQuery = clone $query;
+        $unreadCount = Schema::hasColumn('system_logs', 'is_read')
+            ? (clone $unreadCountQuery)->where(function ($nested) {
+                $nested->whereNull('is_read')->orWhere('is_read', 0);
+            })->count()
+            : (clone $unreadCountQuery)->count();
+
+        $logs = $query->paginate(15)->through(fn ($log) => $this->prepareActivityLog($log));
+
+        return view('mobile.history', [
             'page_title' => 'ประวัติการเข้าถึงและการแจ้งเตือน',
-            'page_icon' => 'fa-clock',
-            'page_subtitle' => 'ติดตามเหตุการณ์ล่าสุดและสถานะระบบ',
-            'hero_title' => 'ประวัติการเข้าถึงและการแจ้งเตือน',
-            'hero_text' => 'แสดงกิจกรรมล่าสุดที่เกี่ยวข้องกับข้อมูลของคุณ',
-            'primary_label' => 'ดูประวัติทั้งหมด',
-            'items' => [
-                ['title' => 'แพทย์เข้าดูข้อมูล', 'meta' => '10 นาทีที่แล้ว'],
-                ['title' => 'มีการขอแชร์ข้อมูล', 'meta' => '1 ชั่วโมงที่แล้ว'],
-                ['title' => 'การยืนยันจะหมดอายุ', 'meta' => '2 ชั่วโมงที่แล้ว'],
-            ],
+            'logs' => $logs,
+            'filter' => $filter,
+            'from' => $from,
+            'to' => $to,
+            'filterLabels' => $this->activityTypeLabels(),
+            'unreadCount' => $unreadCount,
         ]);
+    }
+
+    public function showHistory(int $id)
+    {
+        $user = auth()->user();
+
+        $log = DB::table('system_logs')
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        abort_unless($log, 404);
+
+        $log = $this->prepareActivityLog($log);
+
+        if (Schema::hasColumn('system_logs', 'is_read') && ! $log->is_read) {
+            $update = ['is_read' => 1];
+            if (Schema::hasColumn('system_logs', 'updated_at')) {
+                $update['updated_at'] = now();
+            }
+
+            DB::table('system_logs')
+                ->where('id', $id)
+                ->where('user_id', $user->id)
+                ->update($update);
+        }
+
+        return view('mobile.history_show', [
+            'page_title' => 'รายละเอียดประวัติ',
+            'log' => $log,
+        ]);
+    }
+
+    public function notifications(Request $request)
+    {
+        $user = auth()->user();
+        $this->writeLog($user->id, 'view_notifications_page', 'เปิดหน้าการแจ้งเตือน', '/app/notifications');
+
+        $query = $this->buildActivityLogsQuery($user->id)
+            ->whereIn('action_key', $this->activityNotificationActionKeys());
+
+        $notifications = $query->paginate(10)->through(fn ($log) => $this->prepareActivityLog($log));
+
+        $unreadCountQuery = DB::table('system_logs')
+            ->where('user_id', $user->id)
+            ->whereIn('action_key', $this->activityNotificationActionKeys());
+
+        if (Schema::hasColumn('system_logs', 'is_read')) {
+            $unreadCount = (clone $unreadCountQuery)->where(function ($query) {
+                $query->whereNull('is_read')->orWhere('is_read', 0);
+            })->count();
+        } else {
+            $unreadCount = $notifications->total();
+        }
+
+        $this->recordTaskCompletion($user->id, self::HISTORY_PAGE_TASK_KEY);
+
+        return view('mobile.notifications', [
+            'page_title' => 'การแจ้งเตือน',
+            'notifications' => $notifications,
+            'unreadCount' => $unreadCount,
+        ]);
+    }
+
+    public function markNotificationRead(int $id)
+    {
+        $user = auth()->user();
+
+        if (! Schema::hasColumn('system_logs', 'is_read')) {
+            return redirect()->route('app.notifications');
+        }
+
+        $update = ['is_read' => 1];
+        if (Schema::hasColumn('system_logs', 'updated_at')) {
+            $update['updated_at'] = now();
+        }
+
+        DB::table('system_logs')
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->update($update);
+
+        return redirect()->route('app.notifications')->with('success', 'ทำเครื่องหมายว่าอ่านแล้ว');
     }
 
     public function evaluation()
@@ -228,6 +1152,29 @@ class MobileMenuController extends Controller
             && $this->isTaskCompleted($user->id, self::HISTORY_PAGE_TASK_KEY);
 
         $completed = $this->isTaskCompleted($user->id, self::EVALUATION_FORM_TASK_KEY);
+        $evaluationResponse = null;
+        $evaluationSummary = [
+            'scale_average' => null,
+            'scale_total' => 0,
+        ];
+
+        if ($completed && Schema::hasTable('system_evaluation_responses')) {
+            $evaluationResponse = DB::table('system_evaluation_responses')
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($evaluationResponse) {
+                $evaluationResponse->general_answers = json_decode($evaluationResponse->general_answers_json ?? '{}', true) ?: [];
+                $evaluationResponse->scale_answers = json_decode($evaluationResponse->scale_answers_json ?? '[]', true) ?: [];
+                $evaluationResponse->open_answers = json_decode($evaluationResponse->open_answers_json ?? '{}', true) ?: [];
+
+                $scaleValues = array_values(array_filter($evaluationResponse->scale_answers, fn ($value) => is_numeric($value)));
+                $evaluationSummary['scale_total'] = count($scaleValues);
+                $evaluationSummary['scale_average'] = ! empty($scaleValues)
+                    ? round(array_sum($scaleValues) / count($scaleValues), 2)
+                    : null;
+            }
+        }
 
         $this->writeLog($user->id, 'view_evaluation_page', 'เปิดหน้าแบบประเมินผลการใช้งานระบบต้นแบบ', '/app/evaluation');
 
@@ -235,6 +1182,8 @@ class MobileMenuController extends Controller
             'page_title' => 'แบบประเมินผลการใช้งานระบบต้นแบบ',
             'ready' => $ready,
             'completed' => $completed,
+            'evaluationResponse' => $evaluationResponse,
+            'evaluationSummary' => $evaluationSummary,
         ]);
     }
 
@@ -365,7 +1314,7 @@ class MobileMenuController extends Controller
             'page_title' => 'แนะนำภาพรวมของระบบต้นแบบ',
             'page_subtitle' => 'แนะนำภาพรวมของระบบต้นแบบและฟังก์ชันพื้นฐาน',
             'overview_completed' => $this->isTaskCompleted($user->id, self::SYSTEM_OVERVIEW_TASK_KEY),
-            'video_url' => asset('assets/images/pro/plugins/video-1.mp4'),
+            'video_url' => asset('assets/images/pro/plugins/tutor.mp4'),
         ]);
     }
 
@@ -441,37 +1390,30 @@ class MobileMenuController extends Controller
         return redirect()->route('app.library')->with('success', 'บันทึกภาพผิวหนังเรียบร้อยแล้ว');
     }
 
-    public function notifications()
-    {
-        return $this->page([
-            'page_title' => 'การแจ้งเตือน',
-            'page_icon' => 'fa-bell',
-            'page_subtitle' => 'รายการแจ้งเตือนล่าสุดของคุณ',
-            'hero_title' => 'การแจ้งเตือน',
-            'hero_text' => 'รวมรายการแจ้งเตือนสำคัญจากระบบ',
-            'primary_label' => 'จัดการการแจ้งเตือน',
-            'items' => [
-                ['title' => 'นพ.วรชัย เข้าดูข้อมูลของคุณ', 'meta' => '10 นาทีที่แล้ว'],
-                ['title' => 'พญ.จันทร์ทิพย์ ขอแชร์ข้อมูล', 'meta' => '1 ชั่วโมงที่แล้ว'],
-                ['title' => 'การยินยอมจะหมดอายุในอีก 7 วัน', 'meta' => '2 ชั่วโมงที่แล้ว'],
-            ],
-        ]);
-    }
-
     public function shares()
     {
+        $user = auth()->user();
+        $permissions = $this->getAccessPermissions($user->id)->take(5)->map(function ($permission) {
+            return [
+                'title' => trim(($permission->grantee_name ?? '-') . ' · ' . ($permission->grantee_role_label ?? '-')),
+                'meta' => trim(($permission->image_label ?? '-') . ' · ' . ($permission->created_at_text ?? '-')),
+                'state' => $permission->status_label ?? '-',
+                'state_class' => ($permission->status ?? '') === 'active' ? '' : 'is-revoked',
+                'icon' => $permission->status === 'active' ? 'fa-share-nodes' : 'fa-user-slash',
+                'bg' => $permission->status === 'active' ? 'rgba(69, 82, 208, 0.10)' : 'rgba(194, 65, 12, 0.12)',
+                'color' => $permission->status === 'active' ? '#4552d0' : '#c2410c',
+            ];
+        });
+
         return $this->page([
             'page_title' => 'สถานะการแชร์ข้อมูล',
             'page_icon' => 'fa-share-nodes',
             'page_subtitle' => 'รายการการแชร์ข้อมูลล่าสุด',
             'hero_title' => 'สถานะการแชร์ข้อมูล',
-            'hero_text' => 'แสดงผู้รับข้อมูลและสถานะการแชร์ที่เปิดใช้งานอยู่',
-            'primary_label' => 'ดูสถานะทั้งหมด',
-            'items' => [
-                ['title' => 'นพ.วรชัย แพทย์ผิวหนัง', 'meta' => 'แชร์เมื่อ 12 พ.ค. 2567', 'state' => 'กำลังแชร์'],
-                ['title' => 'พญ.จันทร์ทิพย์ ผิวหนัง', 'meta' => 'แชร์เมื่อ 10 พ.ค. 2567', 'state' => 'กำลังแชร์'],
-                ['title' => 'รศ.นพ.สมชาย ศัลยกรรมผิวหนัง', 'meta' => 'แชร์เมื่อ 08 พ.ค. 2567', 'state' => 'กำลังแชร์'],
-            ],
+            'hero_text' => 'แสดงผู้รับข้อมูลและสถานะการแชร์ที่บันทึกไว้จริง',
+            'primary_label' => 'กำหนดสิทธิ์',
+            'primary_url' => route('app.access'),
+            'items' => $permissions,
         ]);
     }
 }

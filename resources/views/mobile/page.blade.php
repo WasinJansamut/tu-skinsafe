@@ -233,6 +233,11 @@
             flex: 0 0 auto;
         }
 
+        .list-state.is-revoked {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
         .bottom-nav {
             position: fixed;
             left: 50%;
@@ -325,7 +330,7 @@
             <div class="section-card">
                 <div class="section-header">
                     <h2 class="section-title">รายการหลัก</h2>
-                    <a href="#" class="section-link">{{ $primary_label ?? 'ดำเนินการ' }}</a>
+                    <a href="{{ $primary_url ?? '#' }}" class="section-link">{{ $primary_label ?? 'ดำเนินการ' }}</a>
                 </div>
 
                 @foreach ($items ?? [] as $item)
@@ -339,7 +344,7 @@
                             <p class="list-meta">{{ $item['meta'] ?? '' }}</p>
                         </div>
                         @if (!empty($item['state']))
-                            <div class="list-state">
+                            <div class="list-state {{ $item['state_class'] ?? '' }}">
                                 <i class="fa-solid fa-circle"></i>
                                 {{ $item['state'] }}
                             </div>

@@ -365,7 +365,8 @@
     @php
         $paths = is_array($record->paths ?? null) ? $record->paths : [];
         $previewUrl = $record->thumbnail_url ?? (!empty($paths[0]) ? Storage::url($paths[0]) : null);
-        $shareStatusLabel = $record->id % 2 === 0 ? 'แชร์แล้ว' : 'ยังไม่แชร์';
+        $shareStatusLabel = $record->share_status_label ?? 'ยังไม่แชร์';
+        $shareStatusClass = $record->share_status_class ?? 'is-warning';
         $captureLabel = $record->capture_mode === 'camera' ? 'ถ่ายภาพ' : ($record->capture_mode === 'upload' ? 'อัปโหลดจากเครื่อง' : 'ถ่าย + อัปโหลด');
     @endphp
 
@@ -403,7 +404,7 @@
             @endif
             <div class="hero-record mt-3 ">
                 <div class="hero-record-badges text-center">
-                    <span class="record-badge {{ $shareStatusLabel === 'แชร์แล้ว' ? 'is-shared' : 'is-warning' }}">
+                    <span class="record-badge {{ $shareStatusClass }}">
                         <i class="fa-solid fa-share-nodes"></i>
                         {{ $shareStatusLabel }}
                     </span>
@@ -448,43 +449,57 @@
         <div class="page-card mb-3">
             <div class="record-section-title">การดำเนินการ</div>
             <div class="record-actions">
-                <a href="#" class="record-action">
+                <a href="{{ route('app.library.edit', $record->id) }}" class="record-action record-action--primary">
                     <i class="fa-solid fa-pen-to-square"></i>
                     แก้ไข
                 </a>
-                <a href="#" class="record-action record-action--danger">
+                <button type="button" class="record-action record-action--danger js-delete-record"
+                    data-delete-url="{{ route('app.library.destroy', $record->id) }}"
+                    data-delete-title="{{ $record->symptoms ?? 'ภาพผิวหนัง' }}"
+                    data-delete-shared="{{ !empty($record->share_active_count) ? '1' : '0' }}">
                     <i class="fa-solid fa-trash"></i>
                     ลบทั้งรายการ
-                </a>
+                </button>
             </div>
+            @if (!empty($record->share_active_count))
+                <div class="mt-3 p-3 rounded-4" style="background:#fff7ed;border:1px solid rgba(194, 65, 12, 0.12);color:#c2410c;font-size:.86rem;font-weight:700;line-height:1.5;">
+                    การลบภาพนี้จะทำให้ผู้ที่เคยได้รับสิทธิ์ไม่สามารถดูภาพได้
+                </div>
+            @endif
         </div>
 
         <div class="page-card">
             <div class="record-logs">
                 <div class="record-logs-header">
-                    <p class="record-logs-title">Log การเข้าดูรายการนี้ <span class="text-muted small">(Mockup)</span></p>
+                    <p class="record-logs-title">Log การเข้าดูรายการนี้</p>
                 </div>
-                <div class="record-log-item">
-                    <div class="record-log-icon"><i class="fa-solid fa-user"></i></div>
-                    <div class="record-log-body">
-                        <p class="record-log-title">นพ.วรชัย เข้าดูข้อมูล</p>
-                        <p class="record-log-meta">วันนี้ 10:42 น.</p>
+                @forelse (($recordLogs ?? collect()) as $log)
+                    @php
+                        $logIcons = [
+                            'delete' => 'fa-trash',
+                            'consent' => 'fa-file-circle-check',
+                            'share' => 'fa-share-nodes',
+                        ];
+                        $logIcon = $logIcons[$log->action_type ?? ''] ?? 'fa-user';
+                    @endphp
+                    <div class="record-log-item">
+                        <div class="record-log-icon">
+                            <i class="fa-solid {{ $logIcon }}"></i>
+                        </div>
+                        <div class="record-log-body">
+                            <p class="record-log-title">{{ $log->description ?? '-' }}</p>
+                            <p class="record-log-meta">{{ $log->actor_name ?? '-' }} ({{ $log->actor_role ?? '-' }}) · {{ $log->created_at_text ?? '-' }}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="record-log-item">
-                    <div class="record-log-icon"><i class="fa-solid fa-user"></i></div>
-                    <div class="record-log-body">
-                        <p class="record-log-title">พญ.จันทร์ทิพย์ เข้าดูข้อมูล</p>
-                        <p class="record-log-meta">วันนี้ 09:18 น.</p>
+                @empty
+                    <div class="record-log-item">
+                        <div class="record-log-icon"><i class="fa-regular fa-clock"></i></div>
+                        <div class="record-log-body">
+                            <p class="record-log-title">ยังไม่มี log สำหรับรายการนี้</p>
+                            <p class="record-log-meta">เมื่อมีการดู บันทึก แก้ไข หรือแชร์ ระบบจะแสดงที่นี่</p>
+                        </div>
                     </div>
-                </div>
-                <div class="record-log-item">
-                    <div class="record-log-icon"><i class="fa-solid fa-user"></i></div>
-                    <div class="record-log-body">
-                        <p class="record-log-title">รศ.นพ.สมชาย เข้าดูข้อมูล</p>
-                        <p class="record-log-meta">เมื่อวาน 16:05 น.</p>
-                    </div>
-                </div>
+                @endforelse
             </div>
         </div>
     </div>
@@ -528,6 +543,7 @@
             const zoomOutBtn = document.getElementById('zoomOutBtn');
             const zoomResetBtn = document.getElementById('zoomResetBtn');
             const triggers = document.querySelectorAll('.js-image-open');
+            const deleteButtons = document.querySelectorAll('.js-delete-record');
             let scale = 1;
             let translateX = 0;
             let translateY = 0;
@@ -563,6 +579,35 @@
                 trigger.addEventListener('click', (event) => {
                     event.preventDefault();
                     openModal(trigger.dataset.fullSrc || trigger.getAttribute('href'), trigger.dataset.title);
+                });
+            });
+
+            deleteButtons.forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const deleteUrl = button.dataset.deleteUrl;
+                    const title = button.dataset.deleteTitle || 'ภาพนี้';
+                    const isShared = button.dataset.deleteShared === '1';
+                    const result = await Swal.fire({
+                        icon: 'warning',
+                        title: 'ลบภาพ',
+                        html: isShared
+                            ? `การลบ <strong>${title}</strong> จะทำให้ผู้ที่เคยได้รับสิทธิ์ไม่สามารถดูภาพได้`
+                            : `ต้องการลบ <strong>${title}</strong> หรือไม่`,
+                        showCancelButton: true,
+                        confirmButtonText: 'ลบ',
+                        cancelButtonText: 'ยกเลิก',
+                        confirmButtonColor: '#b42318',
+                    });
+
+                    if (! result.isConfirmed || ! deleteUrl) return;
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = deleteUrl;
+                    form.style.display = 'none';
+                    form.innerHTML = `@csrf @method('DELETE')`;
+                    document.body.appendChild(form);
+                    form.submit();
                 });
             });
 

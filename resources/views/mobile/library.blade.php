@@ -223,6 +223,16 @@
             color: #4552d0;
         }
 
+        .record-badge.is-shared {
+            background: #ecfdf3;
+            color: #16834d;
+        }
+
+        .record-badge.is-warning {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
         .record-badge--toggle {
             border: 0;
             cursor: pointer;
@@ -298,6 +308,44 @@
 
         .record-card.is-expanded .record-detail-preview {
             display: block;
+        }
+
+        .record-action-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            padding: 0 14px 14px;
+        }
+
+        .record-action-link,
+        .record-action-button {
+            min-height: 42px;
+            border-radius: 14px;
+            border: 1px solid rgba(17, 24, 39, 0.08);
+            background: #fff;
+            color: #1f2937;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+            padding: 0 10px;
+        }
+
+        .record-action-link--primary,
+        .record-action-button--primary {
+            background: #4552d0;
+            border-color: rgba(69, 82, 208, 0.16);
+            color: #fff;
+        }
+
+        .record-action-link--danger,
+        .record-action-button--danger {
+            background: #fff7f5;
+            border-color: rgba(180, 35, 24, 0.14);
+            color: #b42318;
         }
 
         .empty-state {
@@ -481,6 +529,10 @@
                                     @endif
 
                                     <div class="record-badges">
+                                        <span class="record-badge {{ $record->share_status_class ?? 'is-warning' }}">
+                                            <i class="fa-solid fa-share-nodes"></i>
+                                            {{ $record->share_status_label ?? 'ยังไม่แชร์' }}
+                                        </span>
                                         <button type="button" class="record-badge record-badge--toggle js-mode-badge" data-mode-label="{{ $record->capture_mode === 'camera' ? 'ถ่ายภาพ' : ($record->capture_mode === 'upload' ? 'อัปโหลดจากเครื่อง' : 'ถ่าย + อัปโหลด') }}" aria-label="แสดงรายละเอียดวิธีบันทึกภาพ">
                                             <i class="fa-solid fa-camera"></i>
                                             <span class="record-badge-label">{{ $record->capture_mode === 'camera' ? 'ถ่ายภาพ' : ($record->capture_mode === 'upload' ? 'อัปโหลดจากเครื่อง' : 'ถ่าย + อัปโหลด') }}</span>
@@ -492,10 +544,6 @@
                                     </div>
 
                                 </div>
-
-                                <a href="{{ route('app.library.show', $record->id) }}" class="record-detail-chevron" aria-label="ดูรายละเอียดทั้งหมด">
-                                    <i class="fa-solid fa-chevron-right"></i>
-                                </a>
                             </div>
 
                             @if (!empty($record->paths) && is_array($record->paths) && count($record->paths) > 1)
@@ -517,6 +565,25 @@
                                     </div>
                                 </div>
                             @endif
+
+                            <div class="record-action-row">
+                                <a href="{{ route('app.library.show', $record->id) }}" class="record-action-link record-action-link--primary">
+                                    <i class="fa-solid fa-eye"></i>
+                                    ดูรายละเอียด
+                                </a>
+                                <a href="{{ route('app.library.edit', $record->id) }}" class="record-action-link">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                    แก้ไข
+                                </a>
+                                <button type="button"
+                                    class="record-action-button record-action-button--danger js-delete-record"
+                                    data-delete-url="{{ route('app.library.destroy', $record->id) }}"
+                                    data-delete-title="{{ $record->symptoms ?? 'ภาพผิวหนัง' }}"
+                                    data-delete-shared="{{ !empty($record->share_active_count) ? '1' : '0' }}">
+                                    <i class="fa-solid fa-trash"></i>
+                                    ลบ
+                                </button>
+                            </div>
 
                         </div>
                     @endforeach
@@ -566,6 +633,7 @@
             const triggers = document.querySelectorAll('.js-image-open');
             const galleryToggles = document.querySelectorAll('.js-toggle-gallery');
             const modeBadges = document.querySelectorAll('.js-mode-badge');
+            const deleteButtons = document.querySelectorAll('.js-delete-record');
 
             let scale = 1;
             let translateX = 0;
@@ -619,6 +687,35 @@
             modeBadges.forEach((badge) => {
                 badge.addEventListener('click', () => {
                     badge.classList.toggle('is-revealed');
+                });
+            });
+
+            deleteButtons.forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const deleteUrl = button.dataset.deleteUrl;
+                    const title = button.dataset.deleteTitle || 'ภาพนี้';
+                    const isShared = button.dataset.deleteShared === '1';
+                    const result = await Swal.fire({
+                        icon: 'warning',
+                        title: 'ลบภาพ',
+                        html: isShared
+                            ? `การลบ <strong>${title}</strong> จะทำให้ผู้ที่เคยได้รับสิทธิ์ไม่สามารถดูภาพได้`
+                            : `ต้องการลบ <strong>${title}</strong> หรือไม่`,
+                        showCancelButton: true,
+                        confirmButtonText: 'ลบ',
+                        cancelButtonText: 'ยกเลิก',
+                        confirmButtonColor: '#b42318',
+                    });
+
+                    if (! result.isConfirmed || ! deleteUrl) return;
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = deleteUrl;
+                    form.style.display = 'none';
+                    form.innerHTML = `@csrf @method('DELETE')`;
+                    document.body.appendChild(form);
+                    form.submit();
                 });
             });
 

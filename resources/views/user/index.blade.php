@@ -38,6 +38,7 @@
                                         <th>ชื่อผู้ใช้งาน</th>
                                         <th>ช่องทางการโอนเงิน</th>
                                         <th>สถานะการโอน</th>
+                                        <th>ภารกิจ</th>
                                         <th>ประเภทผู้ใช้งาน</th>
                                     </tr>
                                 </thead>
@@ -60,20 +61,35 @@
                                         @endphp
                                         <tr class="text-center">
                                             <td>
-                                                <form action="{{ route('user.soft_delete', $user->id) }}" method="post">
-                                                    @method('DELETE')
-                                                    @csrf
+                                                <div class="d-flex justify-content-center gap-2 flex-wrap">
                                                     <a href="{{ route('user.edit', $user->id) }}"
                                                         class="btn btn-icon btn-warning" data-bs-toggle="tooltip"
                                                         data-bs-placement="top" title="แก้ไข">
                                                         <i class="fa-solid fa-pen-to-square"></i>
                                                     </a>
-                                                    <button class="btn btn-icon btn-danger btn_delete"
-                                                        alert-msg='ผู้ใช้งาน {{ $user->name ?? '' }}'
-                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="ลบ">
-                                                        <i class="fa-solid fa-trash-can"></i>
-                                                    </button>
-                                                </form>
+                                                    <form action="{{ route('user.soft_delete', $user->id) }}" method="post" class="m-0">
+                                                        @method('DELETE')
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-icon btn-danger btn_delete"
+                                                            alert-msg='ผู้ใช้งาน {{ $user->name ?? '' }}'
+                                                            data-bs-toggle="tooltip" data-bs-placement="top" title="ลบ">
+                                                            <i class="fa-solid fa-trash-can"></i>
+                                                        </button>
+                                                    </form>
+                                                    @if (($user->role ?? null) === 'research_participant')
+                                                        <form action="{{ route('user.reset_participant_data', $user->id) }}" method="post" class="m-0 js-reset-participant-form">
+                                                            @csrf
+                                                            <button type="button"
+                                                                class="btn btn-icon btn-outline-danger js-reset-participant"
+                                                                data-user-name="{{ $user->name ?? 'ผู้เข้าร่วมวิจัย' }}"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-placement="top"
+                                                                title="รีเซ็ตข้อมูลผู้เข้าร่วมวิจัย">
+                                                                <i class="fa-solid fa-arrows-rotate"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="text-start">
                                                 <div class="fw-semibold">{{ $user->name ?? '' }}</div>
@@ -90,6 +106,15 @@
                                                 </span>
                                             </td>
                                             <td>
+                                                @if (($user->role ?? null) === 'research_participant')
+                                                    <span class="badge {{ $user->task_completed_class ?? 'bg-secondary' }}">
+                                                        {{ $user->task_completed_label ?? '-'}}
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-secondary">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
                                                 <span class="badge {{ $user->role === 'admin' ? 'bg-danger' : 'bg-success' }}">
                                                     {{ $user->role === 'admin' ? 'Admin' : 'ผู้เข้าร่วมวิจัย' }}
                                                 </span>
@@ -104,4 +129,28 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('script')
+    <script>
+        document.querySelectorAll('.js-reset-participant').forEach((button) => {
+            button.addEventListener('click', async function() {
+                const form = this.closest('form');
+                const userName = this.dataset.userName || 'ผู้เข้าร่วมวิจัย';
+                const result = await Swal.fire({
+                    icon: 'warning',
+                    title: 'รีเซ็ตข้อมูลผู้เข้าร่วมวิจัย',
+                    html: `ต้องการล้างข้อมูลของ <strong>${userName}</strong> หรือไม่<br><span class="text-danger">ระบบจะลบข้อมูลการใช้งานทั้งหมดของผู้เข้าร่วมคนนั้น แต่ไม่ลบบัญชีผู้ใช้งาน</span>`,
+                    showCancelButton: true,
+                    confirmButtonText: 'รีเซ็ต',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#b42318',
+                });
+
+                if (result.isConfirmed && form) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
 @endsection
