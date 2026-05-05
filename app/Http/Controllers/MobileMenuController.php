@@ -308,7 +308,7 @@ class MobileMenuController extends Controller
             $query->select('*');
         }
 
-        return $query->limit(5)->get()->map(fn ($log) => $this->prepareActivityLog($log));
+        return $query->limit(5)->get()->map(fn($log) => $this->prepareActivityLog($log));
     }
 
     private function getImageShareSummary(int $userId, int $recordId): array
@@ -1045,7 +1045,7 @@ class MobileMenuController extends Controller
             })->count()
             : (clone $unreadCountQuery)->count();
 
-        $logs = $query->paginate(15)->through(fn ($log) => $this->prepareActivityLog($log));
+        $logs = $query->paginate(15)->through(fn($log) => $this->prepareActivityLog($log));
 
         return view('mobile.history', [
             'page_title' => 'ประวัติการเข้าถึงและการแจ้งเตือน',
@@ -1097,7 +1097,7 @@ class MobileMenuController extends Controller
         $query = $this->buildActivityLogsQuery($user->id)
             ->whereIn('action_key', $this->activityNotificationActionKeys());
 
-        $notifications = $query->paginate(10)->through(fn ($log) => $this->prepareActivityLog($log));
+        $notifications = $query->paginate(10)->through(fn($log) => $this->prepareActivityLog($log));
 
         $unreadCountQuery = DB::table('system_logs')
             ->where('user_id', $user->id)
@@ -1168,7 +1168,7 @@ class MobileMenuController extends Controller
                 $evaluationResponse->scale_answers = json_decode($evaluationResponse->scale_answers_json ?? '[]', true) ?: [];
                 $evaluationResponse->open_answers = json_decode($evaluationResponse->open_answers_json ?? '{}', true) ?: [];
 
-                $scaleValues = array_values(array_filter($evaluationResponse->scale_answers, fn ($value) => is_numeric($value)));
+                $scaleValues = array_values(array_filter($evaluationResponse->scale_answers, fn($value) => is_numeric($value)));
                 $evaluationSummary['scale_total'] = count($scaleValues);
                 $evaluationSummary['scale_average'] = ! empty($scaleValues)
                     ? round(array_sum($scaleValues) / count($scaleValues), 2)
@@ -1265,6 +1265,15 @@ class MobileMenuController extends Controller
                     'bg' => 'rgba(247, 190, 137, 0.24)',
                 ],
                 [
+                    'title' => 'จริยธรรมการวิจัย',
+                    'meta' => 'ผู้วิจัยได้ผ่านการอบรมจริยธรรมการวิจัยในมนุษย์แล้ว',
+                    'icon' => 'fa-shield-heart',
+                    'color' => '#16834d',
+                    'bg' => 'rgba(34, 197, 94, 0.16)',
+                    'image_url' => asset('assets/images/about/ethics-training-certificate.jpg'),
+                    'image_alt' => 'ใบรับรองการอบรมจริยธรรมการวิจัย',
+                ],
+                [
                     'title' => 'หลักสูตร',
                     'meta' => 'วิทยาศาสตรมหาบัณฑิต (วิทยาการคอมพิวเตอร์) สาขาวิชาวิทยาการคอมพิวเตอร์',
                     'icon' => 'fa-graduation-cap',
@@ -1291,6 +1300,17 @@ class MobileMenuController extends Controller
                     'icon' => 'fa-phone',
                     'color' => '#16834d',
                     'bg' => 'rgba(34, 197, 94, 0.18)',
+                    'phone_url' => 'tel:0800808714',
+                    'phone_label' => 'กดโทร',
+                ],
+                [
+                    'title' => 'อีเมล',
+                    'meta' => 'wasin.jan@dome.tu.ac.th',
+                    'icon' => 'fa-envelope',
+                    'color' => '#c2410c',
+                    'bg' => 'rgba(251, 191, 36, 0.18)',
+                    'email_url' => 'mailto:wasin.jan@dome.tu.ac.th',
+                    'email_label' => 'ส่ง',
                 ],
             ],
         ]);

@@ -174,6 +174,20 @@
             padding: 10px 0;
         }
 
+        .list-item--link {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .list-item--clickable {
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .list-item--clickable:hover {
+            transform: translateY(-1px);
+        }
+
         .list-item+.list-item {
             border-top: 1px solid rgba(17, 24, 39, 0.06);
         }
@@ -236,6 +250,83 @@
         .list-state.is-revoked {
             background: #fff7ed;
             color: #c2410c;
+        }
+
+        .list-call {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: rgba(34, 197, 94, 0.14);
+            color: #166534;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .list-view-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(69, 82, 208, 0.14);
+            background: rgba(69, 82, 208, 0.08);
+            color: #4552d0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        .lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.82);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 16px;
+        }
+
+        .lightbox.is-open {
+            display: flex;
+        }
+
+        .lightbox-panel {
+            position: relative;
+            width: min(92vw, 520px);
+            max-height: 88vh;
+            background: #0f172a;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        .lightbox-image {
+            width: 100%;
+            max-height: 88vh;
+            object-fit: contain;
+            display: block;
+            background: #fff;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            border: 0;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.72);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .bottom-nav {
@@ -328,13 +419,23 @@
             @endif
 
             <div class="section-card">
-                <div class="section-header">
-                    <h2 class="section-title">รายการหลัก</h2>
-                    <a href="{{ $primary_url ?? '#' }}" class="section-link">{{ $primary_label ?? 'ดำเนินการ' }}</a>
-                </div>
-
                 @foreach ($items ?? [] as $item)
-                    <div class="list-item {{ !empty($item['meta']) && !empty($item['title']) ? 'list-item--stacked' : '' }}">
+                    @php
+                        $isPhoneLink = !empty($item['phone_url']);
+                        $isEmailLink = !empty($item['email_url']);
+                        $itemTag = $isPhoneLink || $isEmailLink ? 'a' : 'div';
+                    @endphp
+                    <{{ $itemTag }}
+                        class="list-item {{ !empty($item['meta']) && !empty($item['title']) ? 'list-item--stacked' : '' }} {{ !empty($item['image_url']) ? 'list-item--clickable' : '' }} {{ $isPhoneLink || $isEmailLink ? 'list-item--link' : '' }}"
+                        @if ($isPhoneLink) href="{{ $item['phone_url'] }}"
+                            aria-label="{{ $item['phone_label'] ?? 'โทร' }}"
+                        @elseif ($isEmailLink)
+                            href="{{ $item['email_url'] }}"
+                            aria-label="{{ $item['email_label'] ?? 'ส่งอีเมล' }}" @endif
+                        @if (!empty($item['image_url'])) role="button"
+                            tabindex="0"
+                            data-lightbox-image="{{ $item['image_url'] }}"
+                            data-lightbox-alt="{{ $item['image_alt'] ?? ($item['title'] ?? 'image') }}" @endif>
                         <div class="list-icon {{ !empty($item['icon']) ? 'list-icon--custom' : '' }}"
                             @if (!empty($item['bg']) || !empty($item['color'])) style="{{ !empty($item['bg']) ? '--list-bg: ' . $item['bg'] . ';' : '' }}{{ !empty($item['color']) ? ' --list-color: ' . $item['color'] . ';' : '' }}" @endif>
                             <i class="fa-solid {{ $item['icon'] ?? 'fa-circle-dot' }}"></i>
@@ -343,13 +444,34 @@
                             <p class="list-title">{{ $item['title'] ?? '' }}</p>
                             <p class="list-meta">{{ $item['meta'] ?? '' }}</p>
                         </div>
+                        @if ($isPhoneLink)
+                            <div class="list-call">
+                                <i class="fa-solid fa-phone-volume"></i>
+                                {{ $item['phone_label'] ?? 'โทร' }}
+                            </div>
+                        @elseif ($isEmailLink)
+                            <div class="list-call">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                {{ $item['email_label'] ?? 'ส่งอีเมล' }}
+                            </div>
+                        @endif
                         @if (!empty($item['state']))
                             <div class="list-state {{ $item['state_class'] ?? '' }}">
                                 <i class="fa-solid fa-circle"></i>
                                 {{ $item['state'] }}
                             </div>
                         @endif
-                    </div>
+                        @if (!empty($item['image_url']))
+                            <button
+                                type="button"
+                                class="list-view-btn"
+                                data-lightbox-image="{{ $item['image_url'] }}"
+                                data-lightbox-alt="{{ $item['image_alt'] ?? ($item['title'] ?? 'image') }}">
+                                <i class="fa-regular fa-image"></i>
+                                {{-- ดู --}}
+                            </button>
+                        @endif
+                        </{{ $itemTag }}>
                 @endforeach
             </div>
         </div>
@@ -357,5 +479,57 @@
         <div class="page-spacer"></div>
     </div>
 
+    <div id="lightbox" class="lightbox" aria-hidden="true">
+        <div class="lightbox-panel" role="dialog" aria-modal="true" aria-label="ภาพใบรับรอง">
+            <button type="button" class="lightbox-close" id="lightboxClose" aria-label="ปิด">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="lightboxImage" class="lightbox-image" alt="">
+        </div>
+    </div>
+
     @include('layouts.mobile-nav')
+
+    <script>
+        (function() {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightboxImage');
+            const lightboxClose = document.getElementById('lightboxClose');
+
+            const openLightbox = (src, alt) => {
+                if (!lightbox || !lightboxImage || !src) return;
+                lightboxImage.src = src;
+                lightboxImage.alt = alt || 'ภาพ';
+                lightbox.classList.add('is-open');
+                lightbox.setAttribute('aria-hidden', 'false');
+            };
+
+            const closeLightbox = () => {
+                if (!lightbox || !lightboxImage) return;
+                lightbox.classList.remove('is-open');
+                lightbox.setAttribute('aria-hidden', 'true');
+                lightboxImage.src = '';
+            };
+
+            document.querySelectorAll('[data-lightbox-image]').forEach((item) => {
+                const src = item.getAttribute('data-lightbox-image');
+                const alt = item.getAttribute('data-lightbox-alt');
+                item.addEventListener('click', () => openLightbox(src, alt));
+                item.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openLightbox(src, alt);
+                    }
+                });
+            });
+
+            lightboxClose?.addEventListener('click', closeLightbox);
+            lightbox?.addEventListener('click', (event) => {
+                if (event.target === lightbox) closeLightbox();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeLightbox();
+            });
+        })();
+    </script>
 @endsection
