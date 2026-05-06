@@ -133,11 +133,29 @@
                                     </form>
 
                                     <div class="border-top mt-4 pt-4">
+                                        <div class="mb-3 text-center">
+                                            <div class="fw-semibold text-dark">
+                                                สำเร็จแล้ว {{ $participantRegisteredCount ?? 0 }} จากที่ต้องการ {{ $participantTargetCount ?? 30 }} คน
+                                            </div>
+                                            <div class="text-muted small mt-1">
+                                                นับจากผู้ทำแบบทดสอบ และแบบประเมินสำเร็จแล้วเท่านั้น
+                                            </div>
+                                            @if (($participantRegisteredCount ?? 0) >= ($participantTargetCount ?? 30))
+                                                <div class="text-success fw-semibold mt-1">ครบจำนวนแล้ว</div>
+                                            @endif
+                                        </div>
                                         <div class="d-grid gap-2">
-                                            <button type="button" class="btn btn-outline-primary btn-lg py-3 fw-bold" data-bs-toggle="modal" data-bs-target="#participantRegisterModal">
-                                                <i class="fa-solid fa-user-plus me-2"></i>
-                                                สมัครเข้าร่วมวิจัย
-                                            </button>
+                                            @if (($participantRegisteredCount ?? 0) >= ($participantTargetCount ?? 30))
+                                                <button type="button" class="btn btn-outline-secondary btn-lg py-3 fw-bold" disabled aria-disabled="true">
+                                                    <i class="fa-solid fa-user-check me-2"></i>
+                                                    ครบจำนวนแล้ว
+                                                </button>
+                                            @else
+                                                <button type="button" class="btn btn-outline-primary btn-lg py-3 fw-bold" data-bs-toggle="modal" data-bs-target="#participantRegisterModal">
+                                                    <i class="fa-solid fa-user-plus me-2"></i>
+                                                    สมัครเข้าร่วมวิจัย
+                                                </button>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -167,6 +185,11 @@
                 <form id="form_participant_register" action="{{ route('participant.register') }}" method="post" novalidate>
                     @csrf
                     <div class="modal-body">
+                        @if (($participantRegisteredCount ?? 0) >= ($participantTargetCount ?? 30))
+                            <div class="alert alert-success mb-3">
+                                ครบจำนวนผู้เข้าร่วมวิจัยแล้ว ไม่สามารถสมัครเพิ่มได้ในขณะนี้
+                            </div>
+                        @endif
                         {{-- <div class="alert alert-warning mb-3">
                             กรุณาอ่านคำชี้แจงในการเข้าร่วมวิจัยก่อน จึงจะสามารถกรอกข้อมูลและบันทึกการสมัครได้
                         </div> --}}
@@ -223,7 +246,7 @@
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
-                        <button type="submit" id="participantRegisterSubmit" class="btn btn-primary">
+                        <button type="submit" id="participantRegisterSubmit" class="btn btn-primary" {{ (($participantRegisteredCount ?? 0) >= ($participantTargetCount ?? 30)) ? 'disabled aria-disabled="true"' : '' }}>
                             <i class="fa-solid fa-floppy-disk me-1"></i>
                             สมัครเข้าร่วมวิจัย
                         </button>

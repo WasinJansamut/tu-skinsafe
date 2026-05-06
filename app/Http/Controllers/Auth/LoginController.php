@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * @method \Illuminate\Routing\Controller middleware($middleware, array $options = [])
@@ -45,7 +49,54 @@ class LoginController extends Controller
 
     public function showLoginForm()
     {
-        return view('auth.login');
+        $participantRegisteredCount = $this->completedParticipantCount();
+        $participantTargetCount = 30;
+
+        return view('auth.login', compact('participantRegisteredCount', 'participantTargetCount'));
+    }
+
+    private function completedParticipantCount(): int
+    {
+        $cacheKey = $this->completedParticipantCountCacheKey();
+
+        return Cache::remember($cacheKey, 60, function () {
+            return $this->completedParticipantCountFresh();
+        });
+    }
+
+    private function completedParticipantCountFresh(): int
+    {
+        if (! Schema::hasTable('user_task_completions') || ! Schema::hasTable('system_evaluation_responses')) {
+            return 0;
+        }
+
+        $taskKeys = [
+            'system_overview',
+            'skin_image_upload',
+            'library_detail',
+            'consent_page',
+            'access_page',
+            'history_page',
+        ];
+
+        $subquery = DB::table('users as u')
+            ->join('user_task_completions as utc', 'u.id', '=', 'utc.user_id')
+            ->join('system_evaluation_responses as ser', 'u.id', '=', 'ser.user_id')
+            ->where('u.role', 'research_participant')
+            ->whereIn('utc.task_key', $taskKeys)
+            ->whereNotNull('utc.completed_at')
+            ->groupBy('utc.user_id')
+            ->select('utc.user_id')
+            ->havingRaw('COUNT(DISTINCT utc.task_key) = ?', [count($taskKeys)]);
+
+        return DB::query()
+            ->fromSub($subquery, 'completed_participants')
+            ->count();
+    }
+
+    private function completedParticipantCountCacheKey(): string
+    {
+        return 'completed_participant_count_v1';
     }
 
     public function login(Request $request)

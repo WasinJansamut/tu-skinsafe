@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -171,6 +172,15 @@ class UserController extends Controller
 
     public function participant_register(Request $request)
     {
+        $participantTargetCount = 30;
+        $participantRegisteredCount = $this->completedParticipantCountFresh();
+
+        if ($participantRegisteredCount >= $participantTargetCount) {
+            return response()->json([
+                'message' => 'ครบจำนวนผู้เข้าร่วมวิจัยแล้ว',
+            ], 422);
+        }
+
         $validated = $request->validate(
             [
                 'name' => ['required', 'string', 'max:255'],
@@ -219,6 +229,50 @@ class UserController extends Controller
                 'username' => $user->username,
             ],
         ], 201);
+    }
+
+    private function completedParticipantCount(): int
+    {
+        $cacheKey = $this->completedParticipantCountCacheKey();
+
+        return Cache::remember($cacheKey, 60, function () {
+            return $this->completedParticipantCountFresh();
+        });
+    }
+
+    private function completedParticipantCountFresh(): int
+    {
+        if (! Schema::hasTable('user_task_completions') || ! Schema::hasTable('system_evaluation_responses')) {
+            return 0;
+        }
+
+        $taskKeys = [
+            'system_overview',
+            'skin_image_upload',
+            'library_detail',
+            'consent_page',
+            'access_page',
+            'history_page',
+        ];
+
+        $subquery = DB::table('users as u')
+            ->join('user_task_completions as utc', 'u.id', '=', 'utc.user_id')
+            ->join('system_evaluation_responses as ser', 'u.id', '=', 'ser.user_id')
+            ->where('u.role', 'research_participant')
+            ->whereIn('utc.task_key', $taskKeys)
+            ->whereNotNull('utc.completed_at')
+            ->groupBy('utc.user_id')
+            ->select('utc.user_id')
+            ->havingRaw('COUNT(DISTINCT utc.task_key) = ?', [count($taskKeys)]);
+
+        return DB::query()
+            ->fromSub($subquery, 'completed_participants')
+            ->count();
+    }
+
+    private function completedParticipantCountCacheKey(): string
+    {
+        return 'completed_participant_count_v1';
     }
 
     public function edit(Request $request, $id)
@@ -293,6 +347,7 @@ class UserController extends Controller
         }
 
         $user->delete();
+        Cache::forget($this->completedParticipantCountCacheKey());
 
         return redirect()->route('user.index')->with('success', 'ลบข้อมูลผู้ใช้งานเรียบร้อยแล้ว');
     }
@@ -363,6 +418,8 @@ class UserController extends Controller
             'target_user_role' => $user->role,
             'deleted_tables' => $summary,
         ]);
+
+        Cache::forget($this->completedParticipantCountCacheKey());
 
         return redirect()->route('user.index')->with('success', 'รีเซ็ตข้อมูลผู้เข้าร่วมวิจัยเรียบร้อยแล้ว');
     }

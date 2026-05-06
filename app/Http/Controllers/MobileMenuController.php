@@ -764,7 +764,6 @@ class MobileMenuController extends Controller
         $user = auth()->user();
         $consentRecord = $this->getConsentRecord($user->id);
         $this->writeLog($user->id, 'view_consent_page', 'เปิดหน้าการยินยอมและการแชร์ข้อมูล', '/app/consent');
-        $this->markConsentTaskCompleted($user->id);
 
         $status = 'not_given';
         if ($consentRecord?->consent_status === 'consented') {
@@ -788,8 +787,8 @@ class MobileMenuController extends Controller
 
         $validated = $request->validate([
             'consent_storage' => ['accepted'],
-            'consent_treatment' => ['accepted'],
-            'consent_doctor' => ['accepted'],
+            'consent_treatment' => ['nullable'],
+            'consent_doctor' => ['nullable'],
             'consent_research' => ['nullable'],
             'consent_note' => ['nullable', 'string', 'max:2000'],
         ]);

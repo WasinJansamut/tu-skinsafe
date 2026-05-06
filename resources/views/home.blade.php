@@ -657,6 +657,8 @@
             'title' => 'แบบประเมินผลการใช้งานระบบต้นแบบ',
             'icon' => 'fa-clipboard-check',
             'lead' => 'กรุณาใช้งานระบบให้ครบทุกฟังก์ชั่นก่อนเริ่มประเมิน',
+            'doneLead' => 'ทำแบบประเมินเรียบร้อยแล้ว',
+            'doneStatus' => 'ค่าตอบแทนจะชำระให้ภายใน 24 ชั่วโมง',
             'url' => route('app.evaluation'),
         ];
 
@@ -751,10 +753,10 @@
                 </div>
                 <div class="menu-copy">
                     <p class="menu-title">{{ $evaluationCard['title'] }}</p>
-                    <p class="menu-lead">{{ $evaluationCard['lead'] }}</p>
-                    <span class="menu-status">
+                    <p class="menu-lead">{{ $evaluationCard['doneLead'] }}</p>
+                    <span class="menu-status" style="color: #c2410c;">
                         <i class="fa-solid fa-circle-check"></i>
-                        ทำแบบประเมินครบถ้วนแล้ว
+                        {{ $evaluationCard['doneStatus'] }}
                     </span>
                 </div>
                 <i class="fa-solid fa-chevron-right text-muted fs-5"></i>
