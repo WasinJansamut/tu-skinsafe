@@ -219,6 +219,16 @@
             margin-bottom: 2px;
         }
 
+        .consent-check strong.inline-required {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            margin-bottom: 2px;
+            font-size: 0.86rem;
+            line-height: 1.25;
+        }
+
         .consent-check span {
             display: block;
             color: #64748b;
@@ -358,13 +368,13 @@
             @csrf
             <div class="page-card mb-3">
                 <div class="section-title">ให้ความยินยอม</div>
-                <p class="lead-copy mb-3">กรุณาติ๊กยินยอมให้จัดเก็บข้อมูลภาพเป็นข้อบังคับ ข้ออื่นเลือกได้ตามความเหมาะสม</p>
+                <p class="lead-copy mb-3">กรุณาเลือกยินยอมให้จัดเก็บข้อมูลภาพเป็นข้อบังคับ ข้ออื่นเลือกได้ตามความเหมาะสม</p>
 
                 <div class="d-grid gap-2">
                     <label class="consent-check">
                         <input type="checkbox" name="consent_storage" value="1" {{ old('consent_storage', $consentRecord?->consent_storage ?? 0) ? 'checked' : '' }} {{ $saveDisabled ? 'disabled' : 'required' }}>
                         <div>
-                            <strong>ยินยอมให้จัดเก็บข้อมูลภาพ <span class="text-danger">*</span></strong>
+                            <strong class="inline-required">ยินยอมให้จัดเก็บข้อมูลภาพ <span class="text-danger">*</span></strong>
                             <span>อนุญาตให้ระบบบันทึกและจัดเก็บภาพโรคผิวหนังของท่าน</span>
                         </div>
                     </label>
@@ -378,7 +388,7 @@
                     </label>
 
                     <label class="consent-check">
-                        <input type="checkbox" name="consent_doctor" value="1" {{ old('consent_doctor', $consentRecord ? ($consentRecord->consent_storage && $consentRecord->consent_treatment) : 0) ? 'checked' : '' }} {{ $saveDisabled ? 'disabled' : '' }}>
+                        <input type="checkbox" name="consent_doctor" value="1" {{ old('consent_doctor', $consentRecord ? $consentRecord->consent_storage && $consentRecord->consent_treatment : 0) ? 'checked' : '' }} {{ $saveDisabled ? 'disabled' : '' }}>
                         <div>
                             <strong>ยินยอมให้แชร์ข้อมูลให้แพทย์ที่ตนกำหนด</strong>
                             <span>ข้อมูลจะถูกส่งต่อเฉพาะผู้ที่ผู้ใช้อนุญาต</span>
