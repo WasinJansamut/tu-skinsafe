@@ -11,7 +11,7 @@ class QuestionnaireController extends Controller
 {
     private function isClosed(): bool
     {
-        return true;
+        return (bool) config('feature_flags.questionnaire_closed', false);
     }
 
     private function sections(): array
